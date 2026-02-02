@@ -59,7 +59,7 @@ All execution paths are demonstrated below using **real UI outputs**.
 ---
 
 ## 🧠 System Architecture
-
+```
 Image
 ↓
 Vision Model (GPT-4.1-mini)
@@ -73,7 +73,7 @@ Pinecone Vector Index (top_k = 1)
 FoodDataSet.json Metadata
 ↓
 Final Answer
-
+```
 
 ---
 
@@ -102,7 +102,7 @@ This embedding space is **global, invariant, and deterministic**.
 ---
 
 ## 📂 Project Structure
-
+```
 Deterministic_Multimodal_Food_Intelligence_System/
 │── deterministic_multimodal_food_intelligence_system.py
 │── test_1_only_image.png
@@ -112,7 +112,7 @@ Deterministic_Multimodal_Food_Intelligence_System/
 │── test_image_2.png
 │── README.md
 │── LICENSE
-
+```
 
 ---
 
@@ -136,17 +136,6 @@ Deterministic_Multimodal_Food_Intelligence_System/
 
 ---
 
-### 4️⃣ Image + Text Combined Query
-
-![Image + Text Query](test_image_1.png)
-
----
-
-### 5️⃣ Final Deterministic Output
-
-![Final Output](test_image_2.png)
-
----
 
 ## ⚠️ Limitations & Disclosure
 
@@ -165,9 +154,13 @@ All screenshots represent **actual system executions**.
 ```bash
 pip install gradio sentence-transformers pinecone-client openai pillow
 python deterministic_multimodal_food_intelligence_system.py
+```
+
 👨‍💻 Author
+
 Shubham Singh
 
 📜 License
+
 MIT License
 
