@@ -83,7 +83,7 @@ Each method is evaluated for:
 ---
 
 ## 🧠 System Architecture
-
+```
 User Query
 ↓
 SentenceTransformer Embedding
@@ -98,7 +98,7 @@ Strict Context Assembly
 ↓
 LLM (Context-Only Answering)
 
-
+```
 ---
 
 ## 🧬 Embeddings & Vector Store
