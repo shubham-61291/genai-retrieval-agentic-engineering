@@ -214,7 +214,7 @@ OpenAI API (GPT-4.1-mini)
 
 Tavily Search API (free tier sufficient for MVP)
 
-##🧭 Future Updates (Planned Roadmap)
+## 🧭 Future Updates (Planned Roadmap)
 Integrate True Legal Databases (instead of general web search):
 
 GDPR official sources
