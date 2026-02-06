@@ -151,14 +151,14 @@ legal-compliance-reflexion-agent/
 ### 3️⃣ DPA Audit Output (GDPR Processing Agreement)
 ![...](legal-compliance-reflexion-agent-DPA-audit.png)
 
-##🧪 Test Fixtures Included
+## 🧪 Test Fixtures Included
 This repository includes two complete test fixtures for deterministic evaluation:
 
 SaaS Master Subscription Agreement.docx
 
 Data Processing Addendum.pdf
 
-##📄 Generated Outputs Included
+## 📄 Generated Outputs Included
 This repository includes the actual generated reports produced by the agent:
 
 Magnetar_Final_Audit_SAAS.pdf
@@ -167,7 +167,7 @@ Magnetar_Final_Audit_DPA.pdf
 
 These outputs demonstrate real execution — not mock data.
 
-##⚠️ Limitations & Disclosure
+## ⚠️ Limitations & Disclosure
 This system is an engineering demonstration of compliance automation. It is not a substitute for licensed legal counsel.
 
 Current limitations:
@@ -180,7 +180,7 @@ Contracts longer than typical SaaS MSAs may hit token limits.
 
 Clause segmentation is currently implicit (not clause-number aware).
 
-##🧩 Issues / Challenges Faced (and How We Fixed Them)
+## 🧩 Issues / Challenges Faced (and How We Fixed Them)
 ❌ 1) PDF Export Crashing (latin-1 encoding error)
 Problem: FPDF fails when the report contains Unicode punctuation like “smart quotes”.
 
@@ -196,7 +196,7 @@ Problem: Tavily sometimes returns high-ranking blogs (Ketch, Exabeam etc.) inste
 
 Current Status: Acceptable for MVP. Planned fix moved to Roadmap.
 
-##▶️ Usage
+## ▶️ Usage
 1. Install dependencies
 Bash
 pip install -U langchain langchain-openai pydantic openai tavily-python langgraph gradio pdfplumber python-docx fpdf
@@ -232,11 +232,11 @@ Prefer eur-lex.europa.eu
 Avoid blog sources unless no official source exists
 
 
-##👨‍💻 Author
+## 👨‍💻 Author
 
 Shubham Singh
 
 
-##📜 License
+## 📜 License
 
 MIT License
