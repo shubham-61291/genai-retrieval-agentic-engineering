@@ -159,7 +159,7 @@ This screenshot shows the live Gradio UI for the system.
 ![India Local Grocery Planner UI](interface.png)
 
 
-###🧪 Step-by-Step System Demonstration (Real Runs)
+## 🧪 Step-by-Step System Demonstration (Real Runs)
 
 1️⃣ Test Run #1 — Full Agent Execution (Logs)
 This document contains the full CrewAI agent execution logs for Test 1.
@@ -175,7 +175,7 @@ This document contains the full CrewAI agent execution logs for Test 2.
 
 📄 Final Output PDF: test_2_output.pdf
 
-##⚠️ Known Issues (GPT-4.1-mini Limitations)
+## ⚠️ Known Issues (GPT-4.1-mini Limitations)
 
 This system intentionally uses GPT-4.1-mini to keep inference cost low and execution fast.
 
@@ -220,7 +220,7 @@ This is a minor labeling issue and does not break execution.
 The budget constraint is enforced through reasoning, not a hard numeric validator.
 The system attempts to stay under the user budget, but it does not guarantee strict compliance.
 
-##⚠️ Limitations & Disclosure (Important)
+## ⚠️ Limitations & Disclosure (Important)
 
 BigBasket pricing is approximate and depends on:
 
@@ -240,7 +240,7 @@ Recipe authenticity depends on search results returned
 
 All screenshots and PDFs in this repository are generated from real executions.
 
-##🔮 Future Improvements
+## 🔮 Future Improvements
 This project is intentionally kept minimal and focused on agentic workflow correctness.
 The following upgrades are planned to improve reliability and production readiness.
 
