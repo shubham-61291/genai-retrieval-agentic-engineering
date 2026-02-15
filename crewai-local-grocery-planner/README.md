@@ -182,124 +182,124 @@ This system intentionally uses GPT-4.1-mini to keep inference cost low and execu
 However, GPT-4.1-mini introduces predictable limitations in tool-heavy workflows.
 
 1) Imperfect Price Matching from Search Snippets
-Even with strict domain filtering (site:bigbasket.com), the model may:
+      Even with strict domain filtering (site:bigbasket.com), the model may:
 
-pick the wrong listing when multiple variants exist
+      pick the wrong listing when multiple variants exist
+   
+      extract a price from an unrelated snippet
 
-extract a price from an unrelated snippet
+      infer missing values when the snippet is incomplete
 
-infer missing values when the snippet is incomplete
-
-As a result, the pricing table should be treated as best-effort approximation, not ground truth.
+      As a result, the pricing table should be treated as best-effort approximation, not ground truth.
 
 2) Inconsistent Quantity Normalization
 GPT-4.1-mini may sometimes:
 
-mix units (grams vs pieces)
+      mix units (grams vs pieces)
 
-assume weights for vegetables (e.g., “1 medium onion ≈ 300g”)
+      assume weights for vegetables (e.g., “1 medium onion ≈ 300g”)
 
-generalize bundle quantities
+      generalize bundle quantities
 
 This is expected because the system does not currently include a deterministic unit-conversion tool.
 
 3) Category Label Drift
 The organizer agent may occasionally classify items inconsistently:
 
-butter under “Dairy” (correct)
+      butter under “Dairy” (correct)
 
-pav under “Bakery” (correct)
+      pav under “Bakery” (correct)
 
-masala under “Spices” (correct)
+      masala under “Spices” (correct)
 
-but sometimes salt may appear under “Staples” depending on phrasing
+      but sometimes salt may appear under “Staples” depending on phrasing
 
 This is a minor labeling issue and does not break execution.
 
 4) Budget Enforcement is Advisory
-The budget constraint is enforced through reasoning, not a hard numeric validator.
-The system attempts to stay under the user budget, but it does not guarantee strict compliance.
+      The budget constraint is enforced through reasoning, not a hard numeric validator.
+      The system attempts to stay under the user budget, but it does not guarantee strict compliance.
 
 ## ⚠️ Limitations & Disclosure (Important)
 
 BigBasket pricing is approximate and depends on:
 
-listing availability
+   listing availability
 
-snippet quality
+   snippet quality
 
-local delivery catalog differences
+   local delivery catalog differences
 
-This system does not guarantee exact prices
+   This system does not guarantee exact prices
 
-This system does not place orders
+   This system does not place orders
 
-The budget check is advisory (best-effort)
+   The budget check is advisory (best-effort)
 
-Recipe authenticity depends on search results returned
+   Recipe authenticity depends on search results returned
 
-All screenshots and PDFs in this repository are generated from real executions.
+   All screenshots and PDFs in this repository are generated from real executions.
 
 ## 🔮 Future Improvements
 This project is intentionally kept minimal and focused on agentic workflow correctness.
 The following upgrades are planned to improve reliability and production readiness.
 
 1) Deterministic Price Extraction (High Priority)
-Add a price parser that extracts:
+   Add a price parser that extracts:
 
-numeric ₹ values
+   numeric ₹ values
 
-unit sizes (250g / 1kg)
+   unit sizes (250g / 1kg)
 
-pack vs loose
+   pack vs loose
 
-Reject any snippet that does not contain a valid price pattern
+   Reject any snippet that does not contain a valid price pattern
 
 2) Hard Budget Validator (Pydantic + Numeric)
-Convert budget input into numeric form
+   Convert budget input into numeric form
 
-Enforce:
+   Enforce:
 
-total_estimated_cost <= budget
+   total_estimated_cost <= budget
 
-If exceeded:
+   If exceeded:
 
-auto-trigger a swap loop
+   auto-trigger a swap loop
 
 3) Unit Conversion Tool
-Introduce a deterministic helper for:
+   Introduce a deterministic helper for:
 
-grams ↔ kg conversion
-
-typical weights for common Indian produce
+   grams ↔ kg conversion
+   
+   typical weights for common Indian produce
 
 “pieces to grams” approximations
 
 4) Structured Output for Pricing Task
-Currently Task 3 returns free-form text.
-A future version will enforce:
+   Currently Task 3 returns free-form text.
+   A future version will enforce:
 
-per-item price schema
+   per-item price schema
 
-total price schema
+   total price schema
 
-confidence score per item
+   confidence score per item
 
 5) Multi-Website Pricing Support
-Add an option to choose pricing source:
+   Add an option to choose pricing source:
 
-BigBasket
+   BigBasket
 
-JioMart
+   JioMart
 
-Blinkit
+   Blinkit
 
-Zepto
+   Zepto
 
 This will reduce “catalog missing” cases for certain cities.
 
 6) Export as PDF (Optional)
-Add a downloadable PDF report generator for the final output.
+   Add a downloadable PDF report generator for the final output.
 
 ▶️ Usage
 1) Install dependencies
