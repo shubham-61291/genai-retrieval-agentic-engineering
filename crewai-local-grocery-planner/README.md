@@ -159,7 +159,7 @@ This screenshot shows the live Gradio UI for the system.
 ![India Local Grocery Planner UI](interface.png)
 
 
-##🧪 Step-by-Step System Demonstration (Real Runs)
+###🧪 Step-by-Step System Demonstration (Real Runs)
 
 1️⃣ Test Run #1 — Full Agent Execution (Logs)
 This document contains the full CrewAI agent execution logs for Test 1.
