@@ -144,6 +144,7 @@ UI: Gradio
 Execution Environment: Google Colab (portable to local)
 
 📂 Project Structure
+```
 crewai-local-grocery-planner/
 │── crew_ai_local_grocery_planner.py
 │── interface.png
@@ -152,6 +153,7 @@ crewai-local-grocery-planner/
 │── test_2_agent_log.docx
 │── test_2_output.pdf
 │── README.md
+```
 🖥️ UI Preview
 This screenshot shows the live Gradio UI for the system.
 ![India Local Grocery Planner UI](interface.png)
