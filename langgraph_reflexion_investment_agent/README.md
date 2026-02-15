@@ -195,7 +195,7 @@ langgraph_reflexion_investment_agent/
 │── test_1.pdf
 │── test_2.pdf
 ```
-🧪 Step-by-Step System Demonstration (Real Outputs)
+### 🧪 Step-by-Step System Demonstration (Real Outputs)
 1️⃣ Gradio Workbench UI (Structured Inputs)
 This screenshot shows the final UI:
 
@@ -274,7 +274,7 @@ agent_log_test_1.md
 
 agent_log_test_2.md
 
-⚠️ Limitations & Disclosure
+### ⚠️ Limitations & Disclosure
 This system does not provide financial advice
 
 No live market feeds are used
@@ -297,10 +297,13 @@ artifact generation (PDF + logs)
 
 All screenshots and PDFs in this repository represent real executions.
 
-▶️ Usage
+### ▶️ Usage
+
 pip install langchain langchain-openai pydantic langgraph gradio markdown xhtml2pdf
+
 python langgraph_reflexion_investment_agent.py
-🔮 Future Improvements
+
+### 🔮 Future Improvements
 Add deterministic allocation validation (must sum to 100%)
 
 Add SIP future value tool (no LLM math)
@@ -313,7 +316,7 @@ Add model switch option (local models / open-source)
 
 Add unit tests for router + loop behavior
 
-⚠️ Known Issues (GPT-4.1-mini)
+### ⚠️ Known Issues (GPT-4.1-mini)
 This project uses gpt-4.1-mini for cost efficiency, but it can sometimes:
 
 produce overly verbose plans
@@ -325,9 +328,11 @@ vary phrasing across runs (non-determinism)
 The evaluator loop mitigates this by forcing refinement until the plan matches the target grade.
 
 👨‍💻 Author
+
 Shubham Singh
 
 📜 License
+
 MIT License
 
 
