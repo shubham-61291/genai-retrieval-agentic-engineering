@@ -1,586 +1,126 @@
-🧠 GENAI RETRIEVAL AGENTIC ENGINEERING
+# GenAI Retrieval & Agentic Engineering
 
-A Portfolio-Grade Repository of Deterministic, Evidence-Grounded, Multi-Agent Systems (LangGraph / CrewAI / BeeAI / RAG / Tooling)
+**A portfolio of 12 applied AI systems covering agent orchestration, retrieval-augmented generation, structured tool use, document intelligence, database querying, and artifact-producing workflows.**
 
-📖 Overview
+[![Python](https://img.shields.io/badge/Language-Python-blue.svg)](https://www.python.org/) [![Projects](https://img.shields.io/badge/Projects-12-2D7D9A.svg)](#project-index) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-This repository is a curated collection of applied AI systems built with a consistent philosophy:
+## Repository overview
 
-Agentic workflows (not single-prompt demos)
+This repository collects 12 standalone project folders developed to explore practical GenAI engineering patterns. The projects range from hybrid retrieval and transcript Q&A to multi-agent workflows, natural-language SQL, evaluation-oriented retrieval comparisons, and a remote Windows executable build pipeline.
 
-Deterministic constraints wherever possible
+The emphasis is on inspectable pipelines: explicit tool boundaries, typed or structured intermediate representations where implemented, observable execution, sample outputs, and clear disclosure of limitations. **The projects do not share one runtime, one dependency set, or one deterministic guarantee.** Each folder has its own README with setup notes and project-specific caveats.
 
-Tool-grounded execution
+> **Scope:** These are research, learning, and portfolio implementations. They are not production medical, legal, investment, nutrition, or security products. LLM review steps and Pydantic schemas improve structure; neither guarantees factual correctness, safety, or suitability.
 
-Evidence-first outputs
+## Project index
 
-Auditable intermediate artifacts
+| # | Project | Main engineering focus | Principal stack / services | Source entry point | Important qualification |
+|---:|---|---|---|---|---|
+| 1 | [Deterministic Multimodal Food Intelligence System](./Deterministic_Multimodal_Food_Intelligence_System/README.md) | Food image naming + top-1 metadata retrieval | OpenAI vision, SentenceTransformers, Pinecone, Gradio | `deterministic_multimodal_food_intelligence_system.py` | Index must be provisioned separately; nutrition fields are not independently verified. |
+| 2 | [X-Ray Agentic Radiologist](./agentic-radiologist/README.md) | Vision findings, internal retrieval, web evidence, report review | LangGraph, OpenAI, Pinecone, Tavily, Gradio | `agentic_radiologist.py` | Research prototype; not for diagnosis or clinical decisions. |
+| 3 | [Agentic Windows EXE Builder](./agentic_software_development/README.md) | ReAct code generation, syntax check, remote Windows build | LangGraph, LangChain, Gradio, GitHub Actions | `agentic_windows_exe_builder.py` | Colab export; remote workflow inputs must match the companion workflow; patch-limit edge needs hardening. |
+| 4 | [BeeAI Investment Analyst](./beeai-investment-analyst/README.md) | Coordinator/specialist agent handoff, SIP calculation, JSON validation | BeeAI Framework, Pydantic, Gradio, OpenAI | `beeai_investment_workbench.py` | Example asset universe and assumed 12% SIP rate; not financial advice. |
+| 5 | [CrewAI Local Grocery Planner](./crewai-local-grocery-planner/README.md) | Sequential recipe-to-shopping-plan agents | CrewAI, Serper, Pydantic, Gradio | `crew_ai_local_grocery_planner.py` | BigBasket constraint is prompt-level; pricing and budget adherence are best effort. |
+| 6 | [DocChat Hybrid Policy Assistant](./docchat-hybrid-policy-assistant/README.md) | Document conversion and hybrid policy retrieval | Docling, BM25, Chroma, LangGraph, Gradio | `doc_chat.py` | Upload occurs in Colab before UI launch; relevance-check exception currently fails open. |
+| 7 | [LangGraph Orchestrator–Worker System](./langgraph-orchestrator-worker-system/README.md) | `Send()` fan-out and synthesis with PDF/log artifacts | LangGraph, Pydantic, xhtml2pdf, Gradio | `langgraph_orchestrator_worker_pattern.py` | UI returns collected logs after graph completion; it is not real-time log streaming. |
+| 8 | [LangGraph Reflexion Investment Agent](./langgraph_reflexion_investment_agent/README.md) | Generate–evaluate–refine loop | LangGraph, LangChain, Pydantic, xhtml2pdf, Gradio | `langgraph_reflexion_investment_agent.py` | Temperature 0.7; no live market data or hard allocation validator. |
+| 9 | [Legal Compliance Reflexion Agent](./legal-compliance-reflexion-agent/README.md) | Structured contract review with reflection and web research | LangGraph, LangChain, Tavily, Pydantic, FPDF, Gradio | `legal_compliance_reflexion_agent.py` | Not legal advice; research does not enforce an official-source allow-list. |
+| 10 | [NL → SQL Agent (Chinook MySQL)](./nl2sql-agent-mysql/README.md) | Natural-language question to executable SQL | LangChain SQL agent, MySQL, Gradio | `nl2sql_agent_mysql.py` | Read-only access is not enforced by code; hard-coded demo credentials must be replaced. |
+| 11 | [Retrieval Methods Benchmark](./retrieval-methods-benchmark/README.md) | Compare vector, multi-query, self-query, and parent-doc retrieval | BGE embeddings, Pinecone, OpenAI, Gradio | `food_rag_methodologies.py` | Deletes/recreates `food-rag-strict`; not a corpus-wide statistical evaluation. |
+| 12 | [YouTube RAG Analyst](./youtube_rag_analyst/README.md) | Transcript ingestion, retrieval-based Q&A, summarization | yt-dlp, SentenceTransformers, FAISS, LangChain, Gradio | `yt_rag.py` | Summary uses only the first 15,000 transcript characters; user session state is global. |
 
-Real UI proof + real run outputs
+## Engineering themes
 
-These projects are designed to be:
+### Agent orchestration
 
-✅ portfolio-grade
-✅ engineering-first
-✅ reproducible
-✅ GitHub-presentable
-✅ honest (no overclaim)
+The repository includes sequential agent pipelines, graph-based conditional routing, specialist-as-tool handoff, and parallel fan-out/fan-in. Projects use LangGraph, CrewAI, or BeeAI depending on the pattern being demonstrated.
 
-This repository is not a “random demo dump”.
-Each folder is a complete, standalone system with:
+### Retrieval and evidence handling
 
-its own README
+Examples include dense vector search, BM25 plus vector retrieval, transcript chunk retrieval, metadata-constrained search, parent-document reconstruction, and database querying. Retrieval grounds outputs in available records, but it does not by itself establish that retrieved records are correct, current, complete, or relevant.
 
-its own screenshots / artifacts
+### Structured outputs and validation
 
-its own execution proof
+Several projects use Pydantic models for task decomposition or output parsing. These schemas validate shape and selected invariants (for example, allocation sums in the BeeAI project); they do not validate the underlying domain recommendation unless explicit checks implement that rule.
 
-🛡️ Core Design Principles (Repo-Wide)
-✅ 1) Deterministic by Construction
+### Artifact generation and observability
 
-Across the repo, systems enforce:
+Project folders include available screenshots, example logs, PDFs, DOCX outputs, or generated-executable workflow evidence. Treat recorded artifacts as examples of individual runs, not proof of universal success.
 
-temperature = 0
+## Repository structure
 
-strict schema outputs (Pydantic)
-
-tool-only execution (no silent file writes)
-
-reproducible pipelines
-
-✅ 2) Evidence-Grounded (RAG / DB / Web)
-
-Every system grounds its outputs using one of:
-
-Static JSON
-
-Vector RAG
-
-Hybrid Retrieval
-
-SQL execution
-
-Web verification tools
-
-✅ 3) No Overclaim
-
-These projects do NOT pretend to be:
-
-medical devices
-
-legal counsel
-
-financial advisors
-
-“AGI systems”
-
-They are engineered demonstrations of:
-
-agent orchestration + deterministic tooling + grounded outputs
-
-✅ 4) Portfolio-Grade UI + Artifacts
-
-Most projects include:
-
-Gradio UI
-
-real screenshots
-
-downloadable artifacts:
-
-PDFs
-
-DOCX reports
-
-logs
-
-JSON outputs
-
-Windows EXE builds
-
-🧠 What This Repo Demonstrates (High-Signal Skills)
-
-This repo signals real capability in:
-
-Agent orchestration (LangGraph / CrewAI / BeeAI)
-
-Deterministic tool design
-
-RAG pipelines (Pinecone / Chroma / hybrid)
-
-Structured outputs (Pydantic)
-
-UI engineering (Gradio workbenches)
-
-Artifact generation (PDF, logs, JSON)
-
-Real debugging + production-style constraints
-
-Model limitation disclosure (GPT-4.1-mini failure modes)
-
-📂 Repository Structure
+```text
+genai-retrieval-agentic-engineering/
+├── README.md
+├── LICENSE
+├── Deterministic_Multimodal_Food_Intelligence_System/
+├── agentic-radiologist/
+├── agentic_software_development/
+├── beeai-investment-analyst/
+├── crewai-local-grocery-planner/
+├── docchat-hybrid-policy-assistant/
+├── langgraph-orchestrator-worker-system/
+├── langgraph_reflexion_investment_agent/
+├── legal-compliance-reflexion-agent/
+├── nl2sql-agent-mysql/
+├── retrieval-methods-benchmark/
+└── youtube_rag_analyst/
 ```
-GENAI RETRIEVAL AGENTIC ENGINEERING/
-│
-│── Deterministic_Multimodal_Food_Intelligence_System/
-│── agentic-radiologist/
-│── agentic_software_development/
-│── beeai-investment-analyst/
-│── crewai-local-grocery-planner/
-│── docchat-hybrid-policy-assistant/
-│── langgraph-orchestrator-worker-system/
-│── langgraph_reflexion_investment_agent/
-│── legal-compliance-reflexion-agent/
-│── nl2sql-agent-mysql/
-│── retrieval-methods-benchmark/
-│── youtube_rag_analyst/
-│
-│── LICENSE
-│── README.md
 
-```
-🚀 Projects Index (Full Repo)
+## Getting started
 
-Below are all systems included in this repository.
+There is no single repository-wide install command because each project has different dependencies and external-service requirements. Start with the selected folder's README and confirm its execution environment before running it.
 
-Each project folder contains its own:
+Several `.py` files are exported from Google Colab notebooks and contain notebook magic (such as `!pip`) or `google.colab` imports; those files must be run as notebook cells or adapted before normal local execution. `youtube_rag_analyst/yt_rag.py` is structured as a normal Python script.
 
-detailed README
+General workflow:
 
-screenshots
+1. Choose a project from the index above.
+2. Read its configuration, data prerequisites, and limitations.
+3. Put credentials in an environment variable or notebook secret store, never in committed source.
+4. Use an isolated development environment and test data.
+5. Inspect generated SQL, reports, code, dependencies, and executables before relying on or executing them.
 
-artifacts
+## Cross-project security and quality notes
 
-runnable Python code
+- **Credentials:** Several examples depend on OpenAI, Pinecone, or Tavily/Serper. Keep API keys out of source code and logs.
+- **External UIs:** Some demos use `share=True`, which creates a public share link. Do not submit confidential contracts, policies, health information, credentials, or proprietary prompts to an exposed demo.
+- **SQL:** Do not connect a model-generated SQL workflow to a privileged or production database without enforced least-privilege permissions and query controls.
+- **Generated code and executables:** Review source and dependencies; syntax validation alone is not a functional or security test.
+- **High-stakes use:** Radiology, legal compliance, and investment outputs require qualified human review and must not be treated as professional determinations.
+- **Reproducibility:** LLM calls, web search, remote APIs, external indices, model versions, and provider latency can make results vary, even where temperature is set to zero.
 
-🍽️ 1) Deterministic Multimodal Food Intelligence System
+## Author
 
-A Deterministic, JSON-Grounded, Image-First Food RAG System
+**Shubham Kumar Singh**
 
-📁 Folder: Deterministic_Multimodal_Food_Intelligence_System/
+- GitHub: [@shubham-61291](https://github.com/shubham-61291)
+- Repository: [genai-retrieval-agentic-engineering](https://github.com/shubham-61291/genai-retrieval-agentic-engineering)
 
-What it does
+## License
 
-Upload food image
+This project is licensed under the **MIT License**. The complete license text is reproduced below and is also available in the repository's [`LICENSE`](./LICENSE) file.
 
-Identify food via vision model
-
-Embed food name
-
-Retrieve nutrition from static JSON via Pinecone
-
-Enforce top-1 deterministic retrieval
-
-Key Signals
-
-deterministic RAG (top_k=1)
-
-no external nutrition APIs
-
-JSON-faithful outputs only
-
-🩻 2) X-Ray Agentic Radiologist (LangGraph Orchestrated)
-
-A Multi-Agent Radiology Report Generator with RAG + Web Verification + Senior Reviewer Guardrails
-
-📁 Folder: agentic-radiologist/
-
-What it does
-
-Upload a chest X-ray image
-
-Extract findings (Vision Analyst)
-
-Retrieve internal radiology knowledge (Pinecone)
-
-Retrieve external evidence (Tavily)
-
-Draft report (Radiologist Agent)
-
-Verify + remove hallucinations (Senior Reviewer)
-
-Key Signals
-
-true LangGraph orchestration
-
-internal + external grounding
-
-hallucination-resistant design
-
-model comparison proof (gpt-4.1-mini vs gpt-5-mini)
-
-🪟 3) Agentic Windows EXE Builder (GitHub Actions)
-
-A Deterministic ReAct Coding Agent that Generates Python Apps and Ships a Real Windows .exe
-
-📁 Folder: agentic_software_development/
-
-What it does
-
-user gives app requirement
-
-agent writes:
-
-src/main.py
-
-requirements.txt
-
-sanity check (py_compile)
-
-patch loop if needed
-
-push to GitHub branch
-
-trigger GitHub Actions Windows runner
-
-download artifact and extract app.exe
-
-Key Signals
-
-real Windows build pipeline
-
-GitHub Actions integration
-
-deterministic tool workflow
-
-UI-based executable delivery
-
-🐝 4) BeeAI Investment Analyst
-
-A Deterministic, Multi-Agent Investment Planning Workbench with Strict JSON Validation
-
-📁 Folder: beeai-investment-analyst/
-
-What it does
-
-investor profile input
-
-multi-agent handoff:
-
-Coordinator Agent
-
-Risk Specialist Agent
-
-deterministic SIP calculator tool
-
-strict JSON output validation (Pydantic)
-
-export final plan as JSON
-
-Key Signals
-
-BeeAI ReAct agents
-
-agent-as-a-tool handoff pattern
-
-strict JSON contract enforcement
-
-🛒 5) CrewAI Local Grocery Planner (India)
-
-A Multi-Agent Grocery Planning Workbench with Local Price Search (BigBasket) + Structured Outputs
-
-📁 Folder: crewai-local-grocery-planner/
-
-What it does
-
-state + city input
-
-meal selection + servings + budget
-
-multi-agent workflow:
-
-Head Chef
-
-Store Manager
-
-Budget Specialist
-
-Zero-Waste Chef
-
-Writer
-
-BigBasket-only price search
-
-structured shopping list outputs
-
-PDF outputs included
-
-Key Signals
-
-true multi-agent workflow in CrewAI
-
-structured output enforcement
-
-explicit GPT-4.1-mini limitation disclosure
-
-📄 6) DOCCHAT: Hybrid Policy Assistant
-
-A Docling-Powered, Hybrid Retrieval, LangGraph-Orchestrated Document QA System
-
-📁 Folder: docchat-hybrid-policy-assistant/
-
-What it does
-
-upload policy DOCX/PDF
-
-parse via Docling → Markdown
-
-chunk using Markdown headers
-
-hybrid retrieval:
-
-BM25
-
-Vector search
-
-LangGraph workflow:
-
-relevance gatekeeper
-
-answer agent
-
-verification agent
-
-UI shows draft + verification report
-
-Key Signals
-
-hybrid retrieval (BM25 + vector)
-
-document-grounded answers only
-
-verification layer prevents hallucinations
-
-🧑‍🍳 7) LangGraph Orchestrator–Worker System
-
-A Deterministic Multi-Agent Orchestration Pattern with Worker Fan-Out, Live Logs, and PDF Artifact Generation
-
-📁 Folder: langgraph-orchestrator-worker-system/
-
-What it does
-
-orchestrator splits multi-item request into tasks
-
-worker agents fan-out via Send()
-
-synthesizer merges outputs
-
-generates:
-
-live logs
-
-downloadable logs
-
-downloadable PDF
-
-Key Signals
-
-canonical orchestrator-worker pattern
-
-fan-out routing
-
-artifact pipeline (Markdown → HTML → PDF)
-
-🏦 8) LangGraph Reflexion Investment Agent
-
-A Multi-Persona Reflexion Loop for Risk-Calibrated Investment Strategy Generation
-
-📁 Folder: langgraph_reflexion_investment_agent/
-
-What it does
-
-generate investment plan
-
-evaluator grades it (Pydantic structured output)
-
-refine using critique
-
-retry loop until target grade achieved
-
-export PDF + logs
-
-Key Signals
-
-reflexion loop design
-
-multi-persona simulation
-
-strict evaluator schema enforcement
-
-⚖️ 9) Legal Compliance Reflexion Agent
-
-A Compliance-Grade Contract Auditor for GDPR & EU AI Act (Reflexion + Tool Evidence + PDF Report)
-
-📁 Folder: legal-compliance-reflexion-agent/
-
-What it does
-
-upload MSA / DPA
-
-parse PDF/DOCX
-
-junior auditor extracts risks
-
-reflection generates evidence queries
-
-Tavily retrieves supporting evidence
-
-senior partner rewrites final audit
-
-exports PDF report
-
-Key Signals
-
-compliance-first output structure
-
-reflexion pipeline reduces hallucinations
-
-explicit “official sources roadmap” included
-
-🗄️ 10) NL → SQL Agent (Chinook DB)
-
-An Agentic Natural Language to SQL System over a Relational Database
-
-📁 Folder: nl2sql-agent-mysql/
-
-What it does
-
-user asks natural language question
-
-agent inspects schema
-
-generates executable SQL
-
-runs query on live MySQL DB
-
-returns grounded results
-
-Key Signals
-
-no RAG (pure SQL grounding)
-
-tool-based schema inspection
-
-reproducible, verifiable answers
-
-🧪 11) Retrieval Methods Benchmark
-
-A Deterministic Evaluation of Retrieval Strategies in Agentic RAG Systems
-
-📁 Folder: retrieval-methods-benchmark/
-
-What it does
-
-Compares retrieval strategies under identical constraints:
-
-Vector similarity retrieval
-
-Multi-query expansion retrieval
-
-Self-query (metadata constrained) retrieval
-
-Parent document reconstruction retrieval
-
-Key Signals
-
-research-grade comparison framing
-
-method isolation
-
-deterministic benchmarking mindset
-
-▶️ 12) YouTube RAG Analyst
-
-A RAG-Based YouTube Transcript Intelligence System (Grounded Video QA)
-
-📁 Folder: youtube_rag_analyst/
-
-What it does
-
-ingest YouTube transcript
-
-chunk + embed
-
-retrieve relevant context
-
-answer grounded questions
-
-Key Signals
-
-practical RAG application
-
-scalable transcript intelligence pattern
-
-▶️ How To Run Any Project (Repo Standard)
-
-Each project is self-contained.
-
-1) Go into a folder
-cd <project-folder>
-
-2) Install dependencies
-
-Each project README contains its exact install command.
-
-Example pattern:
-
-pip install -U <dependencies>
-
-3) Run
-python <main_file>.py
-
-⚠️ Repo-Wide Limitations & Disclosure
-
-This repository contains portfolio engineering systems, not production medical/legal/financial products.
-
-Important disclaimers
-
-Radiology output is not for diagnosis
-
-Legal audits are not legal advice
-
-Investment plans are not financial advice
-
-Web search outputs may contain imperfect sources
-
-GPT-4.1-mini is cost-efficient but can hallucinate in tool-heavy workflows
-
-🧩 Known Issues (GPT-4.1-mini in Tool Workflows)
-
-Across multiple systems, GPT-4.1-mini can show:
-
-imperfect extraction from snippets
-
-tool mismatch selection
-
-minor schema drift
-
-occasional overconfidence in high-stakes domains
-
-This repo explicitly documents these failure modes and includes mitigation patterns (reviewers, verification nodes, reflexion loops).
-
-🔮 Future Updates (Repo Roadmap)
-
-This repo is actively evolving.
-
-Planned upgrades:
-
-Add unit tests for agent graphs
-
-Add deterministic validators (math, budgets, totals)
-
-Add official legal database grounding (EUR-Lex, gdpr-info.eu)
-
-Add structured citation formatting across all RAG systems
-
-Add “model switch” support (OpenAI ↔ open-source local models)
-
-Add a shared reusable agent toolkit folder (/core_tools)
-
-👨‍💻 Author
-
-Shubham Singh
-
-📜 License
-
+```text
 MIT License
+
+Copyright (c) 2026 Shubham Kumar Singh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
