@@ -2,7 +2,7 @@
 
 **A LangGraph-orchestrated ReAct coding agent that turns plain-English requirements into Python applications and retrieves Windows executables built by GitHub Actions.**
 
-[![Python](https://img.shields.io/badge/Language-Python-blue)](https://www.python.org/) [![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-1C3C3C)](https://www.langchain.com/langgraph) [![UI](https://img.shields.io/badge/UI-Gradio-orange)](https://www.gradio.app/) [![Build](https://img.shields.io/badge/Build-GitHub%20Actions-2088FF)](https://github.com/features/actions) [![License](https://img.shields.io/badge/License-MIT-yellow.svg)]
+[![Python](https://img.shields.io/badge/Language-Python-blue)](https://www.python.org/) [![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-1C3C3C)](https://www.langchain.com/langgraph) [![UI](https://img.shields.io/badge/UI-Gradio-orange)](https://www.gradio.app/) [![Build](https://img.shields.io/badge/Build-GitHub%20Actions-2088FF)](https://github.com/features/actions) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 ---
 
@@ -219,4 +219,24 @@ The workflow also relies on Git being available in the runtime because it clones
 
 ## License
 
-The supplied project README states that this project is licensed under the MIT License. A separate `LICENSE` file was not listed in the inspected project directory; include one in the repository if you intend to distribute the project under MIT terms.
+This project is licensed under the **MIT License**. The full license text is provided below and in the repository's [`LICENSE`](./LICENSE) file.
+
+Copyright (c) 2026 Shubham Kumar Singh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
