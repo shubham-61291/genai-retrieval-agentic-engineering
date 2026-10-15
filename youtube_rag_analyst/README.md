@@ -1,215 +1,143 @@
-# 📺 YOUTUBE RAG ANALYST  
-**A Fail-Safe, Transcript-Grounded YouTube Video Intelligence System**
+# YouTube RAG Analyst
 
----
+**A transcript-grounded question-answering and summarization prototype with automatic subtitle ingestion, manual transcript fallback, local FAISS retrieval, and an interactive Gradio interface.**
 
-## 📖 Overview
+[![Python](https://img.shields.io/badge/Python-blue.svg)](https://www.python.org/) [![RAG](https://img.shields.io/badge/Retrieval-FAISS-2D7D9A.svg)](https://faiss.ai/) [![Embeddings](https://img.shields.io/badge/Embeddings-MiniLM--L6--v2-5B7FDC.svg)](https://www.sbert.net/) [![UI](https://img.shields.io/badge/UI-Gradio-orange.svg)](https://www.gradio.app/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE)
 
-The **YouTube RAG Analyst** is an applied AI system that performs **deep video understanding and analysis** using a **retrieval-augmented generation (RAG) pipeline grounded entirely in video transcripts**.
+## Overview
 
-This system is **not** a YouTube scraper demo, **not** a shallow summarizer, and **not** a browsing-based chatbot.
+The application can attempt to obtain English subtitles from a YouTube URL using `yt-dlp`, or accept a transcript pasted by the user. It chunks the transcript, builds an in-memory FAISS index using `sentence-transformers/all-MiniLM-L6-v2`, and retrieves the top four chunks for a question. A LangChain chat model drafts an answer from the retrieved context. The app also has a summary action that sends up to the first 15,000 characters of the transcript directly to the model.
 
-It is designed to remain **fully functional under hostile ingestion conditions**, including:
-- YouTube IP bans
-- Rate limiting (HTTP 429)
-- Subtitle API failures
+The manual input path avoids dependence on automatic subtitle retrieval, but it does not make the automatic path immune to YouTube changes or rate limits.
 
-Every analytical response is:
-- grounded **only** in transcript content
-- retrieved via **semantic embeddings**
-- generated through **context-bounded LLM reasoning**
-- reproducible across ingestion paths
+## Workflow
 
----
-
-## 🧠 What This System Does
-
-The system enables a user to:
-
-1. Ingest a YouTube video transcript automatically via URL  
-2. Fall back to manual transcript ingestion if auto-ingest fails  
-3. Store transcript chunks in a vector index  
-4. Ask arbitrary analytical questions about the video  
-5. Generate structured summaries grounded in retrieved context  
-
-Both ingestion paths feed into **the same RAG core**, ensuring identical analytical behavior.
-
----
-
-## 🛡️ Design Principles
-
-### ✅ Fail-Safe by Construction
-- Dual ingestion paths (Auto + Manual)
-- Explicit detection of IP bans
-- Manual bypass guarantees uptime
-
-### ✅ Transcript-Faithful
-- No browsing
-- No external enrichment
-- No hallucinated facts
-
-### ✅ Retrieval-First Reasoning
-- Context retrieved before generation
-- LLM constrained to retrieved chunks only
-
----
-
-## 🚀 Key Capabilities
-
-- Automatic YouTube subtitle ingestion (yt-dlp based)
-- Manual transcript ingestion (ban-proof)
-- Semantic chunking and vector indexing
-- Question answering over long videos
-- Full-video summarization
-- Deterministic behavior across ingestion modes
-
----
-
-## 🧠 System Architecture
-```
-YouTube Video
-↓
-Transcript (Auto via yt-dlp OR Manual Paste)
-↓
-Recursive Text Chunking
-↓
-SentenceTransformer Embeddings (384-dim)
-↓
-FAISS Vector Store (local)
-↓
-Top-K Semantic Retrieval
-↓
-LLM (Context-Bound Answer / Summary)
+```text
+YouTube URL -> yt-dlp subtitle extraction ──┐
+                                            ├-> transcript -> chunks (1,000 / overlap 150)
+Manual transcript paste ────────────────────┘        -> MiniLM embeddings -> in-memory FAISS
+                                                          ├-> top-4 retrieval -> Q&A
+                                                          └-> first 15,000 chars -> summary
 ```
 
----
+## Configuration
 
-## 🧬 Embeddings (Executable, Not Theoretical)
+| Setting | Value in source |
+|---|---|
+| Embedding model | `sentence-transformers/all-MiniLM-L6-v2` |
+| Embedding dimension | `384` (model dimension) |
+| Vector store | FAISS in memory |
+| Chunk size / overlap | `1000` / `150` characters |
+| Q&A retrieval | `k=4` |
+| LLM | `gpt-4.1-mini` |
+| Temperature | `0.2` |
+| Automatic subtitles | English subtitles/captions sought via `yt-dlp` |
+| Manual input minimum | 50 characters |
 
-- **Model:** sentence-transformers/all-MiniLM-L6-v2  
-- **Embedding Dimension:** 384  
-- **Vector Store:** FAISS (local, in-memory)  
-- **Retrieval Strategy:** Semantic similarity (top-k = 4)  
+## Demonstrations
 
-The embedding space is **fixed, shared, and deterministic**.
+### Automatic ingestion via URL
 
----
+![Automatic URL ingestion](autoingestedvia_Youtube_link.png)
 
-## 🛠 Tech Stack
+### Q&A after automatic ingestion
 
-- **Language:** Python  
-- **UI:** Gradio  
-- **Transcript Engine:** yt-dlp + requests  
-- **Embeddings:** SentenceTransformers  
-- **Vector DB:** FAISS  
-- **LLM:** GPT-4.1-mini  
-- **Framework:** LangChain  
+![Auto-ingested Q&A](auto_ingestion_question_answer.png)
 
----
+### Transcript summary
 
-## 📂 Project Structure
-```
+![Auto-ingested summary](autoingested_summary.png)
+
+### Manual transcript ingestion
+
+![Manual transcript ingestion](manual_ingestion.png)
+
+### Follow-up question on manual input
+
+![Manual additional question](manual_ingestion_extra_question.png)
+
+### Recorded equivalent-output example
+
+![Manual ingestion output example](manual_ingestion_same_output.png)
+
+The last screenshot documents a sample run; it is not a formal proof that the two ingestion paths always generate identical answers.
+
+## Run locally
+
+Unlike several other folders in this repository, the checked-in `yt_rag.py` does not include Colab-only imports or notebook magic. It can be run as a regular Python script after installing its dependencies and setting an API key.
+
+1. Create and activate a virtual environment.
+2. Install dependencies:
+
+   ```bash
+   pip install yt-dlp requests gradio langchain-community langchain-openai langchain-text-splitters faiss-cpu sentence-transformers
+   ```
+
+3. Set `OPENAI_API_KEY` in the shell environment. For example, PowerShell:
+
+   ```powershell
+   $env:OPENAI_API_KEY = "your-api-key"
+   ```
+
+4. Start the application:
+
+   ```bash
+   python yt_rag.py
+   ```
+
+5. In the UI, ingest a transcript first, then ask a question or request a summary.
+
+## Limitations and privacy
+
+- Automatic subtitle access may fail because a video lacks English captions, YouTube changes, network issues, or rate limits.
+- Q&A uses retrieved transcript chunks, but model output can still misstate content. Review answers against the transcript.
+- Summarization does not use retrieved chunks; it sends only the first 15,000 characters of the stored transcript to the model, so later content may be omitted.
+- `temperature=0.2` means outputs are not strictly deterministic.
+- Transcript/index state is stored in a module-level dictionary in a single process. Multiple concurrent users can interfere with each other's state; this is not a multi-tenant service.
+- Transcript text is sent to the configured OpenAI endpoint. Ensure you have permission to process the content and avoid confidential transcripts.
+
+## Repository files
+
+```text
 youtube_rag_analyst/
-│── README.md
-│── yt_rag.py
-│── auto_ingestion_question_answer.png
-│── autoingested_summary.png
-│── autoingestedvia_Youtube_link.png
-│── manual_ingestion.png
-│── manual_ingestion_extra_question.png
-│── manual_ingestion_same_output.png
-│── LICENSE
-
+├── README.md
+├── yt_rag.py
+├── auto_ingestion_question_answer.png
+├── autoingested_summary.png
+├── autoingestedvia_Youtube_link.png
+├── manual_ingestion.png
+├── manual_ingestion_extra_question.png
+└── manual_ingestion_same_output.png
 ```
----
 
-## 🧪 Step-by-Step System Demonstration
+## Author
 
-### 1️⃣ Auto Ingestion via YouTube URL
+**Shubham Kumar Singh**
 
-![Auto Ingest via URL](autoingestedvia_Youtube_link.png)
+## License
 
----
+This project is licensed under the **MIT License**. The complete license text is reproduced below and is also available in the repository's [`LICENSE`](../LICENSE) file.
 
-### 2️⃣ Question Answering (Auto-Ingested Transcript)
-
-![Auto Ingestion Q&A](auto_ingestion_question_answer.png)
-
----
-
-### 3️⃣ Full Video Summarization (Auto-Ingested)
-
-![Auto Ingested Summary](autoingested_summary.png)
-
----
-
-### 4️⃣ Manual Transcript Ingestion (Fail-Safe Mode)
-
-![Manual Ingestion](manual_ingestion.png)
-
----
-
-### 5️⃣ Manual Ingestion → Additional Question
-
-![Manual Extra Question](manual_ingestion_extra_question.png)
-
----
-
-### 6️⃣ Proof of Determinism (Same Output)
-
-Auto ingestion and manual ingestion produce **semantically equivalent answers**.
-
-![Same Output Proof](manual_ingestion_same_output.png)
-
----
-
-## ⚠️ Engineering Challenges & How They Were Solved
-
-### ❌ Challenge 1: Google Colab Transcript Failures
-- **Issue:** TranscriptUnavailable errors
-- **Cause:** Cloud IPs flagged by YouTube
-- **Fix:** Migrated execution to local machine
-
----
-
-### ❌ Challenge 2: YouTube Rate Limiting (429 Errors)
-- **Issue:** IP temporarily soft-banned
-- **Cause:** Repeated automated requests
-- **Fix:** Replaced fragile APIs with `yt-dlp`
-
----
-
-### ❌ Challenge 3: Inevitable Platform Breakage
-- **Reality:** APIs and scraping methods will fail over time
-- **Solution:** Introduced **Manual Ingestion Path**
-- **Outcome:** Analytical core remains 100% functional
-
-This converts a brittle system into a **resilient intelligence product**.
-
----
-
-## ⚠️ Limitations & Disclosure
-
-- No browsing or live data
-- No hallucinated answers
-- Knowledge limited strictly to transcript
-- Requires subtitles or manual transcript
-- Not a replacement for full video playback
-
-All screenshots represent **real system executions**.
-
----
-
-## ▶️ Usage
-
-```bash
-pip install yt-dlp requests gradio langchain-community langchain-openai langchain-text-splitters faiss-cpu sentence-transformers
-python yt_rag.py
-```
-👨‍💻 Author
-
-Shubham Singh
-
-📜 License
-
+```text
 MIT License
+
+Copyright (c) 2026 Shubham Kumar Singh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
