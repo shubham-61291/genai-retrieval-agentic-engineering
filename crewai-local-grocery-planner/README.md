@@ -1,321 +1,252 @@
-# 🛒 CrewAI Local Grocery Planner (India)
-**A Multi-Agent Grocery Planning Workbench with Local Price Search (BigBasket) + Structured Outputs**
+# CrewAI Local Grocery Planner (India)
 
----
+**A multi-agent grocery-planning workbench for recipe discovery, categorized shopping lists, BigBasket-oriented price research, budget estimation, and leftover ideas.**
 
-## 📖 Overview
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/) [![CrewAI](https://img.shields.io/badge/Agents-CrewAI-7C3AED)](https://www.crewai.com/) [![UI](https://img.shields.io/badge/UI-Gradio-orange)](https://www.gradio.app/) [![Search](https://img.shields.io/badge/Search-Serper-4285F4)](https://serper.dev/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-The **CrewAI Local Grocery Planner** is an applied AI system that generates a **structured grocery shopping plan** for any Indian city using a **true multi-agent workflow** built on **CrewAI**.
+> **Accuracy notice:** This is a planning prototype. Grocery prices, pack sizes, quantities, recipe details, and budget totals are model-generated estimates informed by search results. They may be incorrect, stale, or unavailable for a particular delivery PIN code. Verify products and prices directly with the retailer before purchasing. The application does not place orders.
 
-This system is designed as a **multi-step grocery planning workbench**, where multiple agents collaborate to:
+## Contents
 
-- search for an authentic recipe
-- extract ingredients
-- convert ingredients into a categorized shopping list
-- search local prices (restricted to BigBasket)
-- estimate total cost under a user budget
-- suggest leftover usage (waste reduction)
-- compile everything into a clean, readable final report
+- [Overview](#overview)
+- [Features](#features)
+- [How it works](#how-it-works)
+- [Architecture](#architecture)
+- [Technology stack](#technology-stack)
+- [Repository contents](#repository-contents)
+- [Interface and demonstrations](#interface-and-demonstrations)
+- [Run in Google Colab](#run-in-google-colab)
+- [Local execution](#local-execution)
+- [Configuration and data](#configuration-and-data)
+- [Known limitations](#known-limitations)
+- [Potential next steps](#potential-next-steps)
+- [Security and privacy](#security-and-privacy)
+- [Author](#author)
+- [License](#license)
 
-This project is **not** a grocery chatbot and **not** a price guarantee engine.
+## Overview
 
-Every response is:
-- grounded in tool-based web search (Serper)
-- structured using Pydantic output schemas
-- generated through sequential agent execution
-- reproducible across cities, meals, and budgets
+CrewAI Local Grocery Planner turns a meal request into a structured grocery guide for a selected Indian state and city. A sequential CrewAI pipeline assigns recipe research, list organization, price research, leftover planning, and final report writing to five specialized agents.
 
----
+The Gradio interface collects the location, meal, serving count, budget, and optional dietary restrictions. The result is a Markdown guide containing the recipe and ingredients, a categorized shopping list, search-informed price estimates, budget suggestions, and ideas for using likely leftovers.
 
-## 🧠 What This System Does
+This is a **multi-agent workflow prototype**, not a grocery-ordering application or a guaranteed price-comparison service. Although intermediate recipe and shopping-list tasks use Pydantic output models, the price-research and final report tasks return free-form text.
 
-The system enables a user to:
+## Features
 
-1. Select **State + City** (India)
-2. Enter a meal name (e.g., Pav Bhaji, Paneer Butter Masala)
-3. Choose servings
-4. Enter a budget limit
-5. Add dietary restrictions (optional)
-6. Generate a complete grocery plan including:
-   - recipe ingredients
-   - cooking instructions
-   - categorized shopping list
-   - estimated prices (BigBasket)
-   - leftover tips + bonus snack recipe
+- **Location-aware search context:** passes the selected city, state, and India as the location context to Serper.
+- **Recipe discovery:** searches for a requested meal and asks for a structured ingredient list.
+- **Categorized grocery list:** groups ingredients by store section through a Pydantic-backed `GroceryShoppingPlan` task.
+- **BigBasket-oriented pricing:** asks the price-research agent to search using `site:bigbasket.com` queries.
+- **Budget suggestions:** asks the pricing agent to estimate the list total and suggest cheaper alternatives when the estimate exceeds the entered budget.
+- **Leftover ideas:** suggests likely surplus ingredients and a bonus snack.
+- **Sequential multi-agent execution:** runs five agents across five dependent CrewAI tasks.
+- **Gradio interface:** provides inputs for state, city, meal, servings, budget, and dietary restrictions, then displays a Markdown report.
+- **Inspectable examples:** includes two recorded run logs and two generated report PDFs in the repository.
 
----
+## How it works
 
-## 🛡️ Design Principles
+1. The user chooses an Indian state, enters a city and meal, selects servings, and provides a budget and dietary restrictions.
+2. The **Head Chef** uses Serper search to find recipe information and returns a `MealPlan` with a meal name and ingredient list.
+3. The **Store Manager** turns the ingredients into categorized items using the `GroceryShoppingPlan` schema.
+4. The **Budget Specialist** searches for prices with a prompt that specifies BigBasket-only queries, estimates cost, and suggests alternatives if needed.
+5. The **Zero-Waste Chef** identifies likely leftovers and suggests a bonus snack.
+6. The **Writer** combines the task outputs into a final Markdown grocery guide.
+7. The Gradio interface displays the result.
 
-### ✅ Multi-Agent by Construction (CrewAI)
-This system uses **5 specialized agents**:
+## Architecture
 
-- **Head Chef**
-  - finds authentic recipes via search
-- **Store Manager**
-  - converts ingredients into a structured shopping list
-- **Budget Specialist**
-  - searches item prices in the selected city
-  - estimates total cost under budget
-- **Zero-Waste Chef**
-  - identifies likely leftovers
-  - suggests a bonus snack recipe
-- **Writer**
-  - compiles everything into a final Markdown report
+```mermaid
+flowchart TD
+    A[User inputs: state, city, meal, servings, budget, diet] --> B[Gradio UI]
+    B --> C[CrewAI sequential crew]
+    C --> D[Head Chef]
+    D -->|Serper search| E[Recipe and ingredients\nMealPlan schema]
+    E --> F[Store Manager]
+    F --> G[Categorized list\nGroceryShoppingPlan schema]
+    G --> H[Budget Specialist]
+    H -->|Serper search with site:bigbasket.com prompt| I[Price estimate and alternatives]
+    G --> J[Zero-Waste Chef]
+    J --> K[Leftover tips and bonus snack]
+    I --> L[Writer / report compiler]
+    K --> L
+    E --> L
+    L --> M[Markdown shopping guide in Gradio]
+```
 
-This is a real agentic workflow, not a single LLM call.
+### Agents and tasks
 
----
+| Agent | Responsibility | Output / contract |
+|---|---|---|
+| Head Chef | Search for a recipe and identify ingredients | `MealPlan`: meal name and ingredients |
+| Store Manager | Organize ingredients into shopping categories and quantities | `GroceryShoppingPlan`: item list, quantity, category, optional estimated price, total estimate field |
+| Budget Specialist | Search price information and reason about the budget | Free-form price breakdown and possible alternatives |
+| Zero-Waste Chef | Identify likely leftovers and suggest a bonus snack | Free-form leftover suggestions |
+| Writer | Combine recipe, shopping list, pricing, and leftover information | Final Markdown report |
 
-### ✅ Deterministic Constraints (No Overclaim)
-- Model locked: `gpt-4.1-mini`
-- Local price search is constrained to:
-  - `site:bigbasket.com`
-- Outputs for key steps are validated using **Pydantic schemas**
-- Execution follows a strict sequential pipeline (CrewAI Process.sequential)
+## Technology stack
 
----
+| Layer | Implementation |
+|---|---|
+| Language | Python |
+| Agent orchestration | CrewAI `Agent`, `Task`, `Crew`, `Process.sequential` |
+| Model | `gpt-4.1-mini`, configured through CrewAI's `LLM` wrapper |
+| Search | `SerperDevTool` |
+| Schemas | Pydantic models: `MealPlan`, `GroceryItem`, `GroceryShoppingPlan` |
+| Interface | Gradio Blocks |
+| Runtime shown by source | Google Colab |
+| Local data | `asset_dictionary.json` is written during notebook setup, although the grocery-planning pipeline shown in this repository does not use that dictionary for its price-research workflow |
 
-### ✅ Structured Output Contracts (Pydantic)
-The system enforces structured outputs for:
-
-- **MealPlan**
-  - `meal_name`
-  - `ingredients[]`
-
-- **GroceryShoppingPlan**
-  - `items[]` with:
-    - name
-    - quantity
-    - category
-    - estimated_price (optional)
-
-This ensures the system produces predictable intermediate outputs for downstream agents.
-
----
-
-## 🚀 Key Capabilities (No Overclaim)
-
-- Recipe discovery using Serper web search  
-- Ingredient extraction into a validated schema  
-- Store-section categorized grocery list  
-- Local pricing using BigBasket-only search constraints  
-- Budget check with cheaper alternative suggestions  
-- Leftover detection + bonus snack idea  
-- Clean final report compilation  
-- Working Gradio UI  
-
----
-
-## 🧠 System Architecture
+## Repository contents
 
 ```text
-User Inputs (State, City, Meal, Servings, Budget, Diet)
-↓
-Gradio UI
-↓
-CrewAI Sequential Pipeline
-↓
-(1) Head Chef Agent  ── Serper Tool Search ──> Recipe + Ingredients (Pydantic)
-↓
-(2) Store Manager Agent ──> Categorized Shopping List (Pydantic)
-↓
-(3) Budget Specialist Agent ── Serper Tool Search (BigBasket-only) ──> Price Estimation
-↓
-(4) Zero-Waste Chef Agent ──> Leftover Tips + Bonus Snack
-↓
-(5) Writer Agent ──> Final Markdown Report
-↓
-Final Output (UI)
-```
-🛠 Tech Stack
-Language: Python
-
-Agent Framework: CrewAI
-
-Tooling: SerperDevTool (Google Search)
-
-Model: GPT-4.1-mini
-
-Validation: Pydantic
-
-UI: Gradio
-
-Execution Environment: Google Colab (portable to local)
-
-📂 Project Structure
-```
 crewai-local-grocery-planner/
-│── crew_ai_local_grocery_planner.py
-│── interface.png
-│── test_1_agent_log.docx
-│── test_1_output.pdf
-│── test_2_agent_log.docx
-│── test_2_output.pdf
-│── README.md
+├── README.md
+├── LICENSE
+├── crew_ai_local_grocery_planner.py
+├── interface.png
+├── test_1_agent_log.docx
+├── test_1_output.pdf
+├── test_2_agent_log.docx
+└── test_2_output.pdf
 ```
-🖥️ UI Preview
-This screenshot shows the live Gradio UI for the system.
-![India Local Grocery Planner UI](interface.png)
 
+The `LICENSE` file is included as the repository's explicit license notice. Keep it at the project root when publishing or redistributing this project under the MIT License.
 
-## 🧪 Step-by-Step System Demonstration (Real Runs)
+## Interface and demonstrations
 
-1️⃣ Test Run #1 — Full Agent Execution (Logs)
-This document contains the full CrewAI agent execution logs for Test 1.
+### Gradio interface
 
-📄 Agent Log: test_1_agent_log.docx
+The interface collects the location and meal constraints and displays the generated grocery guide.
 
-📄 Final Output PDF: test_1_output.pdf
+![CrewAI Local Grocery Planner interface](./interface.png)
 
-2️⃣ Test Run #2 — Full Agent Execution (Logs)
-This document contains the full CrewAI agent execution logs for Test 2.
+### Recorded run 1
 
-📄 Agent Log: test_2_agent_log.docx
+- [Agent execution log — Test 1](./test_1_agent_log.docx)
+- [Generated grocery guide — Test 1](./test_1_output.pdf)
 
-📄 Final Output PDF: test_2_output.pdf
+### Recorded run 2
 
-## ⚠️ Known Issues (GPT-4.1-mini Limitations)
+- [Agent execution log — Test 2](./test_2_agent_log.docx)
+- [Generated grocery guide — Test 2](./test_2_output.pdf)
 
-This system intentionally uses GPT-4.1-mini to keep inference cost low and execution fast.
+These files are recorded examples from the project. They demonstrate particular runs, not repeatable accuracy or guaranteed results for other cities, meals, or budgets.
 
-However, GPT-4.1-mini introduces predictable limitations in tool-heavy workflows.
+## Run in Google Colab
 
-1) Imperfect Price Matching from Search Snippets
-      Even with strict domain filtering (site:bigbasket.com), the model may:
+The checked-in `crew_ai_local_grocery_planner.py` is exported from a Colab notebook. It contains notebook-specific syntax (`!pip`) and imports `google.colab.userdata`, so **it is not a standalone Python script that can be run unchanged in an ordinary local terminal**.
 
-      pick the wrong listing when multiple variants exist
-   
-      extract a price from an unrelated snippet
+The source identifies the original notebook here:
 
-      infer missing values when the snippet is incomplete
+[Open the CrewAI Local Grocery Planner notebook in Google Colab](https://colab.research.google.com/drive/12MyzDVDsoa4e5VD6ULEhAwLpXBlAhYY9)
 
-      As a result, the pricing table should be treated as best-effort approximation, not ground truth.
+1. Open the notebook in Google Colab.
+2. Add `OPENAI_API_KEY` and `SERPER_API_KEY` in **Secrets** and grant the notebook access to them.
+3. Run the dependency-installation cell. The source installs `crewai`, `crewai-tools`, `gradio`, and `pydantic`.
+4. If prompted by the notebook cell, restart the runtime after installation.
+5. Run the setup, agent/task, and Gradio UI cells in order.
+6. Open the Gradio interface, enter the meal details, and submit the request.
 
-2) Inconsistent Quantity Normalization
-GPT-4.1-mini may sometimes:
+Do not paste API keys directly into notebook cells or commit them to source control.
 
-      mix units (grams vs pieces)
+## Local execution
 
-      assume weights for vegetables (e.g., “1 medium onion ≈ 300g”)
+Local execution requires adapting the notebook-exported source first:
 
-      generalize bundle quantities
+- Move the `!pip install ...` command into a terminal command or notebook setup cell.
+- Replace `google.colab.userdata` secret access with environment-variable loading or another local secret manager.
+- Ensure compatible versions of CrewAI, `crewai-tools`, Gradio, Pydantic, and their dependencies are installed.
+- Set `OPENAI_API_KEY` and `SERPER_API_KEY` before starting the application.
 
-This is expected because the system does not currently include a deterministic unit-conversion tool.
+The local adaptation is not supplied by the current checked-in script. After adapting it, a typical dependency installation is:
 
-3) Category Label Drift
-The organizer agent may occasionally classify items inconsistently:
+```bash
+python -m pip install -U crewai crewai-tools gradio pydantic
+```
 
-      butter under “Dairy” (correct)
+Then run the adapted script from its project directory:
 
-      pav under “Bakery” (correct)
-
-      masala under “Spices” (correct)
-
-      but sometimes salt may appear under “Staples” depending on phrasing
-
-This is a minor labeling issue and does not break execution.
-
-4) Budget Enforcement is Advisory
-      The budget constraint is enforced through reasoning, not a hard numeric validator.
-      The system attempts to stay under the user budget, but it does not guarantee strict compliance.
-
-## ⚠️ Limitations & Disclosure (Important)
-
-BigBasket pricing is approximate and depends on:
-
-   listing availability
-
-   snippet quality
-
-   local delivery catalog differences
-
-   This system does not guarantee exact prices
-
-   This system does not place orders
-
-   The budget check is advisory (best-effort)
-
-   Recipe authenticity depends on search results returned
-
-   All screenshots and PDFs in this repository are generated from real executions.
-
-## 🔮 Future Improvements
-This project is intentionally kept minimal and focused on agentic workflow correctness.
-The following upgrades are planned to improve reliability and production readiness.
-
-1) Deterministic Price Extraction (High Priority)
-   Add a price parser that extracts:
-
-   numeric ₹ values
-
-   unit sizes (250g / 1kg)
-
-   pack vs loose
-
-   Reject any snippet that does not contain a valid price pattern
-
-2) Hard Budget Validator (Pydantic + Numeric)
-   Convert budget input into numeric form
-
-   Enforce:
-
-   total_estimated_cost <= budget
-
-   If exceeded:
-
-   auto-trigger a swap loop
-
-3) Unit Conversion Tool
-   Introduce a deterministic helper for:
-
-   grams ↔ kg conversion
-   
-   typical weights for common Indian produce
-
-“pieces to grams” approximations
-
-4) Structured Output for Pricing Task
-   Currently Task 3 returns free-form text.
-   A future version will enforce:
-
-   per-item price schema
-
-   total price schema
-
-   confidence score per item
-
-5) Multi-Website Pricing Support
-   Add an option to choose pricing source:
-
-   BigBasket
-
-   JioMart
-
-   Blinkit
-
-   Zepto
-
-This will reduce “catalog missing” cases for certain cities.
-
-6) Export as PDF (Optional)
-   Add a downloadable PDF report generator for the final output.
-
-▶️ Usage
-1) Install dependencies
-pip install crewai crewai-tools gradio pydantic
-2) Set environment variables
-export OPENAI_API_KEY="YOUR_KEY"
-export SERPER_API_KEY="YOUR_KEY"
-3) Run
+```bash
 python crew_ai_local_grocery_planner.py
+```
 
-👨‍💻 Author
+Do not run this command against the unchanged Colab-exported file in a normal Python interpreter; the notebook-only syntax and imports will fail.
 
-Shubham Singh
+## Configuration and data
 
-📜 License
+### Required secrets
 
-MIT License
+| Secret | Purpose |
+|---|---|
+| `OPENAI_API_KEY` | Authenticates the model calls made through CrewAI's LLM wrapper |
+| `SERPER_API_KEY` | Authenticates Serper web searches |
 
+### Default interface values
 
+The current source initializes the UI with the following example values:
+
+| Input | Default |
+|---|---|
+| State | Jharkhand |
+| City | Ranchi |
+| Meal | Paneer Butter Masala |
+| Servings | 4 |
+| Budget | `₹500` |
+| Dietary restrictions | `None` |
+
+These are UI defaults, not recommendations or validated assumptions about a user's needs.
+
+### Search and budget behavior
+
+The pricing task's prompt instructs the agent to use `site:bigbasket.com` queries and provide price estimates for the selected location. This is a **prompt-level constraint**, not a deterministic domain allow-list enforced by the application code. Results depend on Serper's returned snippets and the model's interpretation. The budget is also an instruction to the agent rather than a hard numeric postcondition enforced by code.
+
+## Known limitations
+
+- **Prices are estimates:** search snippets can refer to a different size, brand, pack, or variant; local availability and delivery catalogs may differ.
+- **No guaranteed BigBasket-only enforcement:** the task prompt requests BigBasket-specific search, but the code does not independently validate every result URL against an allow-list.
+- **Budget compliance is advisory:** the pricing task reasons about the budget in free-form text. The current implementation does not parse all item prices into a deterministic numeric total and reject plans over budget.
+- **Quantities are not normalized deterministically:** the workflow has no dedicated unit-conversion system to reliably convert pieces, grams, and pack sizes.
+- **Category assignments may vary:** item categories are model-generated, so similar ingredients may occasionally be assigned inconsistently.
+- **Only some intermediate outputs are schema-backed:** the recipe and shopping-list tasks specify Pydantic models; the pricing and final report tasks do not enforce a comparable structured price schema.
+- **Recipe quality depends on search:** results can be incomplete, duplicated, regionally different, or inconsistent with the user's dietary needs. Verify ingredients and cooking steps.
+- **No ordering integration:** the application generates a plan but does not add items to a cart, place an order, or verify retailer availability.
+- **Colab-specific execution:** the checked-in source requires adaptation before standard local Python execution.
+- **No formal evaluation suite is included:** the screenshots and two example runs do not establish pricing accuracy, budget compliance, recipe authenticity, or performance across all Indian cities.
+
+## Potential next steps
+
+1. **Validate price evidence:** extract numeric prices, pack sizes, and product links into a schema; reject results without an identifiable price and unit size.
+2. **Enforce a hard budget rule:** compute item totals numerically and trigger a substitution loop when the total exceeds the budget.
+3. **Normalize quantities:** add deterministic conversions for grams, kilograms, pieces, and common produce estimates, with assumptions explicitly shown.
+4. **Structure price-research results:** validate product name, retailer URL, pack size, price, currency, location signal, and evidence confidence.
+5. **Add additional retailer sources deliberately:** allow users to select retailers, and validate each source instead of relying only on prompt instructions.
+6. **Add report export:** provide a verified downloadable PDF or JSON export from the generated final plan.
+7. **Add repeatable checks:** create test cases for malformed search snippets, missing prices, budget overflow, dietary restrictions, and inconsistent quantities.
+
+## Security and privacy
+
+- Keep API keys in Colab Secrets or a secure local secret manager.
+- Do not commit credentials, `.env` files, or secrets in notebooks.
+- Do not submit private addresses, sensitive dietary/medical information, or other personal data unless you understand the data handling of the model and search providers.
+- Use a suitable access-control setup before exposing the Gradio interface beyond your own development session.
+- Review the generated plan before relying on it; the system does not verify retailer availability or guarantee allergen safety.
+
+## Author
+
+**Shubham Kumar Singh**
+
+- GitHub: [@shubham-61291](https://github.com/shubham-61291)
+- Repository: [genai-retrieval-agentic-engineering](https://github.com/shubham-61291/genai-retrieval-agentic-engineering/tree/main/crewai-local-grocery-planner)
+
+## License
+
+This project is licensed under the MIT License. See the [standalone `LICENSE` file](./LICENSE) in the project root. The full license text is reproduced below for clarity.
+
+Copyright (c) 2026 Shubham Kumar Singh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
