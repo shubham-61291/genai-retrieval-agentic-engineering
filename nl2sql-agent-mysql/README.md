@@ -1,203 +1,120 @@
-# 🗄️ NL → SQL Agent (Chinook DB)
-**An Agentic Natural Language to SQL System over a Relational Database**
+# NL → SQL Agent (Chinook MySQL)
 
----
+**A LangChain SQL-agent demonstration that converts a natural-language question into a database query and returns the executed result from the Chinook sample database.**
 
-## 📖 Overview
+[![Python](https://img.shields.io/badge/Python-blue.svg)](https://www.python.org/) [![Database](https://img.shields.io/badge/Database-MySQL-4479A1.svg)](https://www.mysql.com/) [![LangChain](https://img.shields.io/badge/Agent-LangChain-1C3C3C.svg)](https://www.langchain.com/) [![Gradio](https://img.shields.io/badge/UI-Gradio-orange.svg)](https://www.gradio.app/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE)
 
-The **NL → SQL Agent (Chinook DB)** is an applied AI system that enables **natural language querying of a relational SQL database** using an **agentic reasoning pipeline**.
+> **Database safety notice:** The checked-in script configures a local MySQL connection using `root:root`, contains a placeholder OpenAI key assignment, and does not enforce read-only SQL permissions in the application code. Do not expose it to an untrusted network or connect it to a production database without hardening the database user, secret handling, query permissions, and access controls.
 
-This system translates user questions into **executable SQL queries**, runs them against a **live MySQL database**, and returns **grounded, verifiable results** through a clean UI.
+## Overview
 
-This project is **not** a chatbot, **not** a vector RAG system, and **not** a prompt-only SQL generator.
+Users enter a question in English. LangChain's SQL agent can inspect the configured MySQL schema, generate a query, execute it, and return the result through Gradio. The demonstrated dataset is Chinook, a sample music-store database with album, artist, track, and customer data. This is SQL-grounded querying, not vector RAG.
 
-Every response is:
-- grounded **only** in a live SQL database
-- generated via **schema-aware agent reasoning**
-- executed as **real SQL queries**
-- fully auditable and repeatable
+## Architecture
 
----
-
-## 🧠 What This System Does
-
-The system enables a user to:
-
-1. Ask a question in natural language (English)
-2. Inspect the database schema dynamically
-3. Generate a valid SQL query using an LLM-driven agent
-4. Execute the SQL query against MySQL
-5. Return the exact query result to the user via a UI
-
-All execution paths are demonstrated below using **real backend traces and UI outputs**.
-
----
-
-## 🛡️ Design Principles
-
-### ✅ Agentic by Construction
-- Explicit tool-based reasoning
-- Schema inspection before query generation
-- SQL execution as a first-class action
-- No hardcoded queries
-
-### ✅ Database-Grounded
-- All answers come **only** from the SQL database
-- No external knowledge sources
-- No inferred or hallucinated values
-- Query failure → surfaced, not hidden
-
-### ✅ Deterministic Execution
-- `temperature = 0`
-- SQL results determine final answers
-- Identical input → identical output
-
----
-
-## 🚀 Key Capabilities
-
-- Natural language → SQL translation
-- Multi-table joins and aggregations
-- Schema-aware reasoning
-- Read-only SQL execution
-- Transparent backend SQL traces
-- Interactive Gradio frontend
-
----
-
-## 🧠 System Architecture
-```
-User Question (Text)
-↓
-Gradio UI
-↓
-LangChain SQL Agent
-↓
-Schema Inspection (MySQL)
-↓
-SQL Query Generation
-↓
-SQL Execution (Chinook DB)
-↓
-Final Answer
+```text
+Natural-language question
+  -> Gradio callback
+  -> LangChain SQL agent (gpt-4.1-mini, temperature=0)
+  -> MySQL schema inspection / SQL generation
+  -> SQL execution against Chinook
+  -> returned answer
 ```
 
----
+## Demonstrations
 
-## 🛠 Tech Stack
+### Backend trace
 
-- **Language:** Python
-- **LLM:** GPT-4.1-mini
-- **Agent Framework:** LangChain
-- **Database:** MySQL
-- **Dataset:** Chinook (public sample DB)
-- **UI:** Gradio
-- **Execution Environment:** Google Colab
+![Backend agent trace](sql_agent_incode_testing_backend.png)
 
----
+### Album count
 
-## 📂 Project Structure
-```
-nl2sql-agent-mysql/
-│── nl2sql_agent_mysql.py
-│── sql_agent_incode_testing_backend.png
-│── sql_agent_test_1.png
-│── sql_agent_test_2.png
-│── sql_agent_test_3.png
-│── sql_agent_test_4.png
-│── sql_agent_test_5.png
-│── README.md
-```
+![Album count query](sql_agent_test_1.png)
 
----
+### Country spending
 
-## 🧪 Step-by-Step System Demonstration
+![Country spending query](sql_agent_test_2.png)
 
-### 1️⃣ Backend Agent Reasoning & SQL Execution
+### Artist with the most albums
 
-The agent inspects schema, generates SQL, executes it, and returns grounded results.
+![Artist album-count query](sql_agent_test_3.png)
 
-![Backend SQL Agent Trace](sql_agent_incode_testing_backend.png)
+### Most expensive tracks
 
----
+![Track pricing query](sql_agent_test_4.png)
 
-### 2️⃣ UI Test — Album Count Query
+### Top customer by spending
 
-**Query:** *How many albums are there in the database?*
+![Customer spending query](sql_agent_test_5.png)
 
-![Album Count Test](sql_agent_test_1.png)
+## Execution environment and setup
 
----
+The checked-in `.py` file is exported from Google Colab and contains notebook shell commands (`!apt-get`, `!mysql`, `!pip`, `!wget`) as well as a local MySQL server setup sequence. It is **not** directly executable unchanged by running `python nl2sql_agent_mysql.py` in an ordinary terminal.
 
-### 3️⃣ UI Test — Country Spending Analysis
-
-**Query:** *Which country spent the most money?*
-
-![Country Spending Test](sql_agent_test_2.png)
-
----
-
-### 4️⃣ UI Test — Artist Analytics
-
-**Query:** *Which artist has the most albums?*
-
-![Artist Albums Test](sql_agent_test_3.png)
-
----
-
-### 5️⃣ UI Test — Track Pricing Analysis
-
-**Query:** *What are the top 5 most expensive tracks?*
-
-![Top Tracks Test](sql_agent_test_4.png)
-
----
-
-### 6️⃣ UI Test — Customer Analytics
-
-**Query:** *Who is the top customer by total spending?*
-
-![Top Customer Test](sql_agent_test_5.png)
-
----
-
-## 🧬 Why This Is NOT RAG
-
-This system **does not use embeddings or vector search**.
-
-| Aspect | This System |
-|------|-------------|
-| Retrieval | SQL execution |
-| Grounding | Database rows |
-| Reasoning | Agent + tools |
-| Hallucination | Impossible without SQL |
-| Verification | Re-runnable queries |
-
----
-
-## ⚠️ Limitations & Disclosure
-
-- Read-only queries only
-- No write/update/delete operations
-- No multi-database federation
-- Knowledge limited strictly to the database
-- Query failures are not masked
-
-All screenshots represent **actual system executions**.
-
----
-
-## ▶️ Usage
+The original notebook installs MySQL, creates a `Chinook` database, imports the public Chinook MySQL dump, and installs these Python dependencies:
 
 ```bash
 pip install langchain langchain-community langchain-openai mysql-connector-python gradio
-python nl2sql_agent_mysql.py
 ```
 
-👨‍💻 Author
+Before running the notebook:
 
-Shubham Singh
+1. Replace the placeholder `OPENAI_API_KEY` assignment with a secret/environment-variable setup. Never commit a real key.
+2. Use an isolated local/demo MySQL instance and a dedicated least-privilege database user.
+3. Confirm the Chinook schema is loaded and the connection URI matches the environment.
+4. Run the notebook cells in order, then launch the Gradio interface.
 
-📜 License
+## Query safety limitations
 
+- The current `create_sql_agent` setup is not wrapped by an application-level SQL allow-list or read-only validator. Database permissions are the only reliable boundary unless the code is hardened.
+- Never use an administrative `root` account for a language-model-generated SQL workflow.
+- The notebook sets the root password to a simple demo value and should only be used in a disposable environment.
+- The source calls `demo.launch(share=True)`, which can expose the interface publicly. Do not share it while it can reach an untrusted or sensitive database.
+- SQL execution is grounded in database results, but an incorrect query can still return incomplete or misleading results.
+- No automated test suite covers injection attempts, permission boundaries, or query correctness in this folder.
+
+## Repository files
+
+```text
+nl2sql-agent-mysql/
+├── README.md
+├── nl2sql_agent_mysql.py
+├── sql_agent_incode_testing_backend.png
+├── sql_agent_test_1.png
+├── sql_agent_test_2.png
+├── sql_agent_test_3.png
+├── sql_agent_test_4.png
+└── sql_agent_test_5.png
+```
+
+## Author
+
+**Shubham Kumar Singh**
+
+## License
+
+This project is licensed under the **MIT License**. The complete license text is reproduced below and is also available in the repository's [`LICENSE`](../LICENSE) file.
+
+```text
 MIT License
+
+Copyright (c) 2026 Shubham Kumar Singh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
