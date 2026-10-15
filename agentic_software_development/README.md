@@ -1,308 +1,222 @@
-# 🪟 Agentic Windows EXE Builder (GitHub Actions)  
-**A Deterministic ReAct Coding Agent that Generates Python Apps and Ships a Real Windows `.exe` via GitHub Actions**
+# Agentic Windows EXE Builder
+
+**A LangGraph-orchestrated ReAct coding agent that turns plain-English requirements into Python applications and retrieves Windows executables built by GitHub Actions.**
+
+[![Python](https://img.shields.io/badge/Language-Python-blue)](https://www.python.org/) [![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-1C3C3C)](https://www.langchain.com/langgraph) [![UI](https://img.shields.io/badge/UI-Gradio-orange)](https://www.gradio.app/) [![Build](https://img.shields.io/badge/Build-GitHub%20Actions-2088FF)](https://github.com/features/actions) [![License](https://img.shields.io/badge/License-MIT-yellow.svg)]
 
 ---
 
-## 📖 Overview
+## Overview
 
-The **Agentic Windows EXE Builder** is an applied AI system that converts **plain-English application requirements** into a **real Windows executable (`app.exe`)** using a strict, deterministic agent workflow.
+**Agentic Windows EXE Builder** is a prototype build-orchestration system that accepts an application requirement in natural language, asks an LLM-powered ReAct agent to generate Python source and dependencies, checks the source for syntax errors, and submits the generated files to a configured GitHub repository. GitHub Actions performs the Windows executable build; the orchestrator then downloads the workflow artifact, locates `app.exe`, and exposes it in the Gradio interface.
 
-This system is **not** a chatbot, **not** a code snippet generator, and **not** a “toy” Gradio demo.
+The system is more than a code-snippet generator: it connects tool-based code generation, local validation, Git operations, a remote CI workflow, artifact retrieval, and a downloadable result in one workflow.
 
-It is a **full agentic build pipeline** where an agent:
+> **Execution environment:** The checked-in Python file was exported from Google Colab and includes Colab-specific imports, Colab Secrets access, and a notebook-style `!pip` command. Use the linked Colab notebook as the primary entry point. The checked-in `.py` file is not a standalone script that can be run unchanged in an ordinary local Python terminal.
 
-- writes application source code (`src/main.py`)
-- writes dependency spec (`requirements.txt`)
-- runs a deterministic sanity check (`python -m py_compile`)
-- auto-patches the code if compilation fails
-- pushes to a unique Git branch
-- triggers GitHub Actions Windows runner
-- downloads the build artifact
-- extracts the final `app.exe` and exposes it in the UI
+## What It Does
 
-All screenshots below are from **real system executions**.
+1. Accepts application requirements through a Gradio interface.
+2. Generates `src/main.py` and `requirements.txt` using the model's tool calls.
+3. Runs `python -m py_compile src/main.py` in the current Colab workspace.
+4. Invokes a patch agent after a failed syntax check, subject to the configured patch counter.
+5. Creates a run-specific branch in a configured GitHub repository and pushes the generated files.
+6. Dispatches the configured GitHub Actions workflow for that branch.
+7. Polls the workflow run until it completes or times out.
+8. Downloads the `windows-exe` artifact, extracts `app.exe`, and makes it available through the UI.
 
----
+## Key Capabilities
 
-## 🧠 What This System Does
+- **Tool-mediated generation:** the code-generation agent is bound to `write_file` and `read_file` tools for application artifact creation and inspection.
+- **Bounded agent settings:** model temperature is set to `0`; the script configures up to 18 ReAct steps per generation/patch loop and a patch counter of 4.
+- **Syntax validation:** generated source must pass `python -m py_compile src/main.py` before the graph routes to the remote build stage.
+- **Remote Windows build:** compilation into an executable is delegated to the configured GitHub Actions workflow, not performed by Colab itself.
+- **Unique run branches:** each run uses a branch name based on its run ID, in the form `build-<run-id>`.
+- **Live observability:** the interface streams status updates and recent agent logs.
+- **Artifact handoff:** the orchestration code searches the workflow artifacts for `windows-exe` and then for a file named `app.exe`.
 
-The system enables a user to:
+## Architecture
 
-1. Enter an app requirement in plain English  
-2. Let the ReAct agent generate:
-   - `src/main.py`
-   - `requirements.txt`
-3. Run a compile sanity check locally in Colab  
-4. If the build fails, trigger a patch loop automatically  
-5. Push the generated code to GitHub in a unique branch  
-6. Trigger GitHub Actions to build a Windows `.exe`  
-7. Download the final `app.exe` directly from the UI  
-
----
-
-## 🛡️ Design Principles
-
-### ✅ Deterministic by Construction
-- Model temperature is locked to `0`
-- Strict maximum ReAct steps enforced
-- Strict maximum patch rounds enforced
-- Sanity check must pass before GitHub build starts
-
-### ✅ Tool-Grounded Execution
-The agent is not allowed to write files directly.
-
-It can only use:
-- `write_file()`
-- `read_file()`
-
-This ensures all code artifacts are produced via **auditable tool actions**.
-
-### ✅ Real Windows Build (Not Simulated)
-The `.exe` is not built in Colab.
-
-Instead, it is built using:
-- GitHub Actions Windows runner
-- artifact packaging + download
-- deterministic extraction into `/release/app.exe`
-
----
-
-## 🚀 Key Capabilities
-
-- ReAct agent writes complete runnable Python apps
-- Automatic dependency generation (`requirements.txt`)
-- Deterministic sanity check:
-  - `python -m py_compile src/main.py`
-- Auto-debug patch loop if compilation fails
-- Unique Git branch creation per run
-- GitHub Actions workflow dispatch
-- Artifact download + `.exe` extraction
-- Gradio UI for full build orchestration
-- Downloadable final executable
-
----
-
-## 🧠 System Architecture
+```mermaid
+flowchart TD
+    A[User enters app requirements] --> B[Gradio interface]
+    B --> C[LangGraph workflow]
+    C --> D[Initialize run workspace]
+    D --> E[ReAct code-generation agent]
+    E --> F[write_file: src/main.py and requirements.txt]
+    F --> G[Syntax check: py_compile]
+    G -->|Pass| H[Create unique Git branch and push files]
+    G -->|Fail| I[Patch agent]
+    I --> G
+    H --> J[Dispatch GitHub Actions workflow]
+    J --> K[Poll workflow status]
+    K -->|Success| L[Download windows-exe artifact]
+    L --> M[Extract app.exe]
+    M --> N[Expose executable in Gradio]
+    K -->|Failure or timeout| O[Report build error]
 ```
-User App Requirements
-↓
-ReAct Codegen Agent (GPT-4.1-mini, temp=0)
-↓
-Tool Calls:
 
-write_file(src/main.py)
+### Components
 
-write_file(requirements.txt)
-↓
-Sanity Check:
-python -m py_compile src/main.py
-↓
-If Failed:
-Patch ReAct Agent (minimal changes)
-↓
-Push to GitHub (unique build branch)
-↓
-Trigger GitHub Actions Windows Runner
-↓
-Build Artifact: windows-exe.zip
-↓
-Extract app.exe
-↓
-Download from UI
+| Component | Responsibility |
+|---|---|
+| Gradio UI | Collects requirements and displays status, logs, and the resulting executable. |
+| LangGraph | Orchestrates workspace setup, code generation, syntax validation, patching, and remote build steps. |
+| ReAct code-generation agent | Generates `src/main.py` and `requirements.txt` through tool calls. |
+| File tools | Provide `write_file` and `read_file` access within the current run directory. |
+| Local sanity check | Runs `python -m py_compile src/main.py`; this checks syntax, not full application behavior. |
+| GitHub integration | Clones the configured build repository, creates a unique branch, commits the generated files, and dispatches a workflow. |
+| GitHub Actions | Builds the Windows executable and publishes an artifact named `windows-exe` (expected by the orchestrator). |
+| Artifact handler | Downloads the artifact ZIP and locates `app.exe` for the Gradio download field. |
 
-```
----
+## Technology Stack
 
-## 🛠 Tech Stack
+| Area | Implementation |
+|---|---|
+| Language | Python |
+| Agent orchestration | LangGraph (`StateGraph`) |
+| LLM integration | `langchain-openai` with `gpt-4.1-mini` |
+| Model setting | Temperature `0` |
+| UI | Gradio |
+| Remote version control and automation | Git and GitHub REST API |
+| Windows packaging | Configured GitHub Actions workflow |
+| Runtime shown in source | Google Colab |
+| Agent state | TypedDict-based workflow state |
 
-- **Language:** Python  
-- **Agent Framework:** LangGraph  
-- **LLM:** GPT-4.1-mini  
-- **UI:** Gradio  
-- **Build System:** GitHub Actions (Windows runner)  
-- **Packaging:** Artifact zip download + deterministic extraction  
-- **Execution Environment:** Google Colab  
+## Repository Structure
 
----
+The following files are present in this project directory:
 
-## 📂 Project Structure
-```
+```text
 agentic_software_development/
-│── agentic_windows_exe_builder.py
-│── README.md
-│
-│── GIT_WORKFLOWS.png
-│── interface.png
-│
-│── TEST_1.png
-│── TEST_1_AGENT_LOG.txt
-│── TEST_1_OUTPUT.png
-│── TEST_1_OUTPUT_2.png
-│── TEST_1_OUTPUT_3.png
-│
-│── TEST_2.png
-│── TEST_2_AGENT_LOG.txt
-│── TEST_2_OUTPUT.png
+├── README.md
+├── agentic_windows_exe_builder.py
+├── GIT_WORKFLOWS.png
+├── interface.png
+├── TEST_1.png
+├── TEST_1_AGENT_LOG.txt
+├── TEST_1_OUTPUT.png
+├── TEST_1_OUTPUT_2.png
+├── TEST_1_OUTPUT_3.png
+├── TEST_2.png
+├── TEST_2_AGENT_LOG.txt
+└── TEST_2_OUTPUT.png
 ```
 
----
+## Demonstrations
 
-## 🧪 Step-by-Step System Demonstration
+The repository includes screenshots and recorded logs for two example build runs. These are project artifacts, not a guarantee that every new requirement will compile or package successfully.
 
-## 1️⃣ GitHub Actions Workflow Runs (Real Windows Build Proof)
+### GitHub Actions workflow runs
 
-This screenshot shows multiple successful GitHub Actions workflow executions.
+The workflow screenshot documents the project's recorded remote Windows-build runs.
 
-![GitHub Workflow Runs](GIT_WORKFLOWS.png)
+![GitHub Actions workflow runs](./GIT_WORKFLOWS.png)
 
----
+### Gradio interface
 
-## 2️⃣ Gradio UI (Initial State)
+The interface provides the requirements input, build action, backend status, live agent logs, and a file output for the executable.
 
-The system UI exposes:
-- App requirements textbox
-- Build button
-- Status display
-- Live agent logs
-- Final `.exe` download widget
+![Agentic Windows EXE Builder interface](./interface.png)
 
-![Interface](interface.png)
+### Test 1 — PyQt browser
 
----
+The first test asks the agent to generate a desktop browser using PyQt and QtWebEngine, with an address bar and navigation controls.
 
-## 3️⃣ TEST 1 — App Requirement: PyQt Browser
+![Test 1 application request](./TEST_1.png)
 
-This test prompts the agent to build a full Windows GUI browser using:
-- PyQt5
-- QtWebEngine
-- address bar
-- back/forward/reload controls
-- in-app navigation (not Chrome)
+The saved log records a first-pass syntax failure caused by malformed generated source, a patch round, a successful subsequent syntax check, and a successful GitHub Actions run. The recorded run then downloads the artifact and extracts `app.exe`.
 
-![Test 1 Prompt](TEST_1.png)
+![Test 1 agent and build log](./TEST_1_OUTPUT.png)
 
----
+The output screenshots show the generated browser displaying a web page and navigating to a search result.
 
-## 4️⃣ TEST 1 — Agent Logs (Codegen + Patch + Build)
+![Test 1 browser output](./TEST_1_OUTPUT_2.png)
 
-This run demonstrates:
-- deterministic tool calls (`write_file`)
-- sanity check failure due to invalid syntax
-- patch loop applied
-- successful GitHub Actions build
-- artifact download and extraction
+![Test 1 browser navigation output](./TEST_1_OUTPUT_3.png)
 
-![Test 1 Output Log](TEST_1_OUTPUT.png)
+Recorded log: [`TEST_1_AGENT_LOG.txt`](./TEST_1_AGENT_LOG.txt)
 
----
+### Test 2 — Scientific calculator
 
-## 5️⃣ TEST 1 — Browser Output (Google Page Loaded)
+The second test requests a Tkinter scientific calculator with arithmetic and scientific functions, constants, memory controls, keyboard support, and a visible copyright line.
 
-The generated Windows executable successfully launches a browser window and loads Google inside the app.
+![Test 2 application request](./TEST_2.png)
 
-![Test 1 Browser Output](TEST_1_OUTPUT_2.png)
+The saved log records a syntax error in the initial source, a patch round, a successful subsequent syntax check, and a successful GitHub Actions run followed by artifact download and extraction.
 
----
+![Test 2 calculator output](./TEST_2_OUTPUT.png)
 
-## 6️⃣ TEST 1 — Browser Output (Search Result Navigation)
+Recorded log: [`TEST_2_AGENT_LOG.txt`](./TEST_2_AGENT_LOG.txt)
 
-The browser supports search and navigation inside the embedded QtWebEngine window.
+## Setup and Usage
 
-![Test 1 Browser Output 2](TEST_1_OUTPUT_3.png)
+### Recommended entry point: Google Colab
 
----
+The checked-in script identifies its originating notebook in its docstring:
 
-## 7️⃣ TEST 2 — App Requirement: Scientific Calculator (Tkinter)
+[Open the Agentic Windows EXE Builder notebook in Google Colab](https://colab.research.google.com/drive/1CO5UE1KKDh7YoGtF9gpEPakWgrZhnjbS)
 
-This test prompts the agent to build a full scientific calculator including:
+Use the notebook workflow rather than executing the exported `.py` file directly in a local terminal. The source depends on `google.colab.userdata` and contains a notebook-style package-install command.
 
-- arithmetic operations
-- scientific functions (sin/cos/tan/log/ln/sqrt)
-- constants π and e
-- memory functions (M+, M-, MR, MC)
-- keyboard support
-- visible copyright line
+### Configure Colab Secrets
 
-![Test 2 Prompt](TEST_2.png)
+Add these secrets in **Google Colab → Runtime → Secrets** and grant the notebook access to them:
 
----
+| Secret | Purpose |
+|---|---|
+| `OPENAI_API_KEY` | Authenticates the model calls used for code generation and patching. |
+| `GITHUB_TOKEN` | Authenticates Git operations and GitHub API calls for the configured build repository and Actions workflow. |
 
-## 8️⃣ TEST 2 — Scientific Calculator Output
+Do not write real tokens into the notebook, source code, README, logs, or a committed `.env` file.
 
-The generated Windows `.exe` successfully launches a working scientific calculator GUI.
+### Configure the GitHub build target
 
-![Test 2 Output](TEST_2_OUTPUT.png)
+The current source hard-codes these values near the top of `agentic_windows_exe_builder.py`:
 
----
+```python
+GITHUB_USER = "shubham-61291"
+GITHUB_REPO = "agentic-exe-builder"
+WORKFLOW_FILE = "build-exe.yml"
+```
 
-## 🧾 Example Agent Logs (Verifiable Runs)
+Before running in another environment, confirm that the target repository exists and that the token has the required repository contents and Actions permissions. The target repository must contain the configured workflow at `.github/workflows/build-exe.yml`. The orchestration code expects a successful run to publish an artifact named `windows-exe` containing an executable file named `app.exe`.
 
-### ✅ TEST 1 Agent Log
+The target repository and workflow are separate from this documentation repository. Their configuration and workflow YAML could not be independently verified from the accessible repository contents, so check those prerequisites before using the builder.
 
-Saved as:
+### Dependency set
 
-- `TEST_1_AGENT_LOG.txt`
-
-This log shows:
-- deterministic ReAct tool calls
-- sanity check failure due to null bytes
-- patch loop applied
-- successful GitHub Actions build
-
----
-
-### ✅ TEST 2 Agent Log
-
-Saved as:
-
-- `TEST_2_AGENT_LOG.txt`
-
-This log shows:
-- deterministic ReAct tool calls
-- sanity check failure due to a syntax error
-- patch loop applied
-- successful GitHub Actions build
-
----
-
-## ⚠️ Limitations & Disclosure
-
-- The system relies on GitHub Actions Windows runners for builds
-- Builds require a valid GitHub token stored in Colab Secrets
-- The agent may generate invalid code in the first attempt
-  - patch loop corrects most compilation errors
-- The system currently performs compilation sanity checks
-  - it does not run full GUI integration tests
-
-All screenshots represent **actual system executions**.
-
----
-
-## ▶️ Usage
-
-### 1) Install Dependencies
+The notebook installation command in the source installs the following top-level packages:
 
 ```bash
 pip install -U langchain langchain-openai pydantic langgraph gradio requests
-2) Run
-python agentic_windows_exe_builder.py
-
 ```
-🔐 Required Secrets (Colab)
-This system expects the following secrets inside Colab:
 
-OPENAI_API_KEY
+The workflow also relies on Git being available in the runtime because it clones the target repository, creates a branch, commits files, and pushes the branch.
 
-GITHUB_TOKEN
+## Validation Boundaries and Known Limitations
 
-These secrets are never committed to GitHub.
+- **Syntax is not functionality:** `py_compile` validates Python syntax only. It does not run the generated GUI, test application behavior, verify dependency compatibility on Windows, or assess security.
+- **Generated code can fail:** the recorded examples show that the first generated source can contain syntax errors or invalid characters. The patch process is an attempt to recover, not a guarantee of correctness.
+- **Patch-limit termination needs attention:** although the source defines `MAX_PATCH_ROUNDS = 4`, the current LangGraph edges route the patch node back to the sanity node and route every failed sanity check back to patching. There is no explicit terminal edge for the `FAILED: max patch rounds reached.` state. A persistent failure may therefore continue cycling instead of cleanly terminating. Add and test a terminal failure route before treating the retry limit as a hard workflow bound.
+- **External workflow dependency:** a valid GitHub repository, adequate token permissions, a compatible `build-exe.yml` workflow, and a published `windows-exe` artifact are required. These remote prerequisites are not bundled in this directory.
+- **Public Gradio share link:** the source calls `demo.launch(share=True)`. Treat the resulting shared UI as externally reachable; do not submit confidential requirements, proprietary source, credentials, or sensitive data through it.
+- **Credential handling:** the token is embedded in the Git clone URL constructed by the source. Review runtime logs and Git process handling carefully, avoid printing URLs, and use a narrowly scoped token. Revoke the token if it is exposed.
+- **Artifact trust:** execute generated `.exe` files only in a controlled environment after inspection. The builder does not provide malware analysis or application-level security verification.
+- **External-service limits:** successful use depends on OpenAI API access, GitHub availability, Actions quota, and the Windows build workflow.
 
-👨‍💻 Author
+## Security Notes
 
-Shubham Singh
+1. Use a dedicated GitHub token with only the permissions required to clone, push branches, and dispatch/read Actions workflows on the build repository.
+2. Keep Colab Secrets enabled and never hard-code keys into source or generated applications.
+3. Review generated source and dependencies before executing the resulting binary.
+4. Do not expose the shared Gradio interface to untrusted users without additional authentication and access controls.
+5. Treat generated applications, logs, and build artifacts as untrusted until reviewed.
 
-📜 License
+## Author
 
-MIT License
+**Shubham Kumar Singh**
 
+## License
 
+The supplied project README states that this project is licensed under the MIT License. A separate `LICENSE` file was not listed in the inspected project directory; include one in the repository if you intend to distribute the project under MIT terms.
