@@ -1,242 +1,120 @@
-# ⚖️ LEGAL COMPLIANCE REFLEXION AGENT
+# Legal Compliance Reflexion Agent
 
-A Compliance-Grade, Tool-Grounded, Reflexion-Based Contract Auditor for GDPR & EU AI Act
+**A LangGraph-based contract-review prototype that structures potential GDPR/EU AI Act issues, generates research queries, retrieves web evidence, and revises an audit report.**
 
-## 📖 Overview
+[![Python](https://img.shields.io/badge/Python-blue.svg)](https://www.python.org/) [![LangGraph](https://img.shields.io/badge/Workflow-LangGraph-2E6D8E.svg)](https://www.langchain.com/langgraph) [![Pydantic](https://img.shields.io/badge/Schema-Pydantic-E92063.svg)](https://docs.pydantic.dev/) [![Gradio](https://img.shields.io/badge/UI-Gradio-orange.svg)](https://www.gradio.app/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE)
 
-The Legal Compliance Reflexion Agent is an applied AI system that performs contract risk auditing for:
-* SaaS Master Subscription Agreements (MSA)
-* Data Processing Addendums (DPA)
+> **Legal disclaimer:** This project is not legal advice, a compliance certification, or a substitute for qualified legal counsel. Scores and flags are model-generated and must be checked against current law, official sources, jurisdiction, and the full contract context.
 
-using a structured, Reflexion-based agent workflow built on LangGraph.
+## Overview
 
-This system is not a legal chatbot, not a generic summarizer, and not a hallucination-driven LLM demo.
+The prototype accepts contract text from PDF/DOCX or pasted text and returns a structured report containing an executive summary, an overall score, and flagged clauses with risk level, clause text, explanation, and suggested rewrite. The LangGraph pipeline connects four stages: Junior Auditor, Reflector, Researcher, and Senior Partner Revisor. The reflector generates search queries; Tavily Search retrieves evidence; the revisor receives the draft and evidence to produce the final structured report. A PDF report and Gradio UI are included.
 
-Every audit report is:
-* generated through structured extraction
-* refined through reflection + tool-grounded verification
-* output as both:
-  * a live Markdown report
-  * an official PDF audit report
-
-## 🧠 What This System Does
-
-The system enables a user to:
-* Upload a contract (PDF or DOCX)
-* Or paste contract text directly
-* Run an automated audit for:
-  * GDPR violations
-  * EU AI Act compliance risks
-  * commercial traps (liability caps, audit restrictions, etc.)
-* Generate a structured compliance report with:
-  * risk level
-  * offending clause
-  * legal reasoning
-  * suggested compliant rewrite
-* Download a PDF report for records / compliance teams
-
-All execution paths are demonstrated below using real UI outputs.
-
-## 🛡️ Design Principles
-
-### ✅ Reflexion by Construction (Junior → Senior Partner Model)
-This system models a real legal team:
-1. **Junior Auditor:** fast first-pass compliance scan
-2. **Reflection Research Lead:** critiques missing citations and generates legal queries
-3. **Tool Researcher:** retrieves supporting legal evidence from the web
-4. **Senior Partner:** rewrites the final audit report with grounded references
-
-This structure reduces hallucination risk and improves legal precision.
-
-### ✅ Compliance-First Output (Structured, Not Chatty)
-The output is forced into a strict schema:
-* Executive Summary (CEO-readable)
-* Overall compliance score (0–100)
-* List of flagged clauses:
-  * risk severity
-  * exact offending clause text
-  * legal violation explanation
-  * suggested compliant rewrite
-
-This ensures the system is testable, stable, and deterministic.
-
-### ✅ Audit-Ready Report Generation
-The system produces:
-* UI Report (Markdown)
-* PDF Report (FPDF-based)
-
-This makes the system useful in real workflows (legal review, vendor negotiation, procurement).
-
-## 🚀 Key Capabilities
-* SaaS MSA compliance auditing
-* DPA compliance auditing
-* GDPR principle enforcement
-* EU AI Act risk detection (high-level)
-* Clause-by-clause risk flagging
-* Tool-grounded verification via Tavily Search
-* Deterministic structured outputs (Pydantic)
-* PDF report generation
-* Clean Gradio UI workflow
-
-## 🧠 System Architecture (Executable, Not Theoretical)
+## Architecture
 
 ```text
-Contract Input (PDF/DOCX/Text)
-        ↓
-DocumentParser (pdfplumber / python-docx)
-        ↓
-Junior Auditor (GPT-4.1-mini, structured output)
-        ↓
-Reflection Node (Critique + search queries)
-        ↓
-Tavily Search Tool (evidence retrieval)
-        ↓
-Senior Partner Revisor (final audit report)
-        ↓
-UI Markdown Output  +  Official PDF Report
+PDF / DOCX / pasted text
+  -> DocumentParser (pdfplumber / python-docx for files)
+  -> Junior Auditor (Pydantic AuditReport)
+  -> Reflector (missing evidence + up to 3 search queries)
+  -> Tavily Search Results
+  -> Senior Revisor (structured revised report)
+  -> Markdown/UI report + FPDF PDF
 ```
-## 🧬 Agent Workflow (LangGraph)
-The workflow is built using LangGraph nodes:
 
-* **Junior Auditor Node**
-* **Reflector Node**
-* **Research Node** (Tavily tool)
-* **Senior Partner Node**
-* **Final Report Output**
+## Output contract
 
-This is not a single prompt. It is a multi-step verification pipeline.
+- `executive_summary`
+- `overall_compliance_score` (integer described as 0–100 in the prompt/schema)
+- `flagged_clauses[]`, each with `risk_level`, `offending_clause`, `violation_explanation`, and `suggested_rewrite`
 
----
+The schema structures the output; it does not prove a clause is unlawful or that a score has legal meaning.
 
-## 🛠 Tech Stack
-* **Language:** Python
-* **Agent Framework:** LangGraph
-* **LLM:** GPT-4.1-mini (temperature=0)
-* **Schema Enforcement:** Pydantic
-* **Tool Search:** Tavily Search API
-* **PDF Parsing:** pdfplumber
-* **DOCX Parsing:** python-docx
-* **PDF Output:** FPDF
-* **UI:** Gradio
+## Demonstrations
 
----
+### Main interface
 
-## 📂 Project Structure
+![Legal audit interface](legal-compliance-reflexion-agent-interface.png)
+
+### SaaS master agreement example
+
+![SaaS audit example](legal-compliance-reflexion-agent-SaaS_audit.png)
+
+[Sample contract](SaaS%20Master%20Subscription%20Agreement.docx) · [Generated sample audit PDF](Magnetar_Final_Audit_SAAS.pdf)
+
+### Data processing addendum example
+
+![DPA audit example](legal-compliance-reflexion-agent-DPA-audit.png)
+
+[Sample DPA](Data%20Processing%20Addendum.pdf) · [Generated sample audit PDF](Magnetar_Final_Audit_DPA.pdf)
+
+## Run in Google Colab
+
+The source uses `!pip`, `google.colab.userdata`, and notebook cells that execute illustrative test cases. It should be run as notebook code or adapted before standard local execution.
+
+1. Add `OPENAI_API_KEY` and `TAVILY_API_KEY` to Colab Secrets.
+2. Install dependencies:
+
+   ```bash
+   pip install -U langchain langchain-openai langchain-community pydantic openai tavily-python pdfplumber python-docx fpdf gradio
+   ```
+
+3. Execute cells in order. Review the example test output before using the UI with another document.
+4. Upload a PDF/DOCX or paste contract text, run the workflow, and inspect the full report.
+
+## Limitations, source quality, and privacy
+
+- Search uses Tavily queries and does not enforce an official-source domain allow-list. Search results may be outdated, incomplete, or unofficial.
+- The reviewer is another model call, not an independent legal reviewer. Evidence selection and citation correctness are not formally tested.
+- PDF/DOCX text extraction may omit tables, footnotes, scanned text, or layout relationships; OCR is not implemented in the shown parser.
+- The score is model-assigned and should not be treated as a measurable legal compliance grade.
+- The example script runs a dummy contract through illustrative setup/test cells before the interactive workflow; separate test code from application startup for a production deployment.
+- `demo.launch(share=True, debug=True)` creates an externally reachable link. Contracts often contain confidential information; do not upload real client contracts to a public demo without authorization, access controls, and an approved data-processing arrangement.
+- The sample PDFs use “Privileged & Confidential” wording, but generating that label does not create legal privilege.
+
+## Repository files
+
 ```text
 legal-compliance-reflexion-agent/
-│── legal_compliance_reflexion_agent.py
-│── README.md
-│
-│── SaaS Master Subscription Agreement.docx
-│── Data Processing Addendum.pdf
-│
-│── Magnetar_Final_Audit_SAAS.pdf
-│── Magnetar_Final_Audit_DPA.pdf
-│
-│── legal-compliance-reflexion-agent-interface.png
-│── legal-compliance-reflexion-agent-SaaS_audit.png
-│── legal-compliance-reflexion-agent-DPA-audit.png
+├── README.md
+├── legal_compliance_reflexion_agent.py
+├── SaaS Master Subscription Agreement.docx
+├── Data Processing Addendum.pdf
+├── Magnetar_Final_Audit_SAAS.pdf
+├── Magnetar_Final_Audit_DPA.pdf
+├── legal-compliance-reflexion-agent-interface.png
+├── legal-compliance-reflexion-agent-SaaS_audit.png
+└── legal-compliance-reflexion-agent-DPA-audit.png
 ```
-🧪 Step-by-Step System Demonstration (Real Outputs)
-### 1️⃣ Main Interface (Upload Contract / Paste Text)
-![...](legal-compliance-reflexion-agent-interface.png)
 
----
+## Author
 
-### 2️⃣ SaaS Agreement Audit Output (MSA / Subscription Contract)
-![...](legal-compliance-reflexion-agent-SaaS_audit.png)
+**Shubham Kumar Singh**
 
----
+## License
 
-### 3️⃣ DPA Audit Output (GDPR Processing Agreement)
-![...](legal-compliance-reflexion-agent-DPA-audit.png)
+This project is licensed under the **MIT License**. The complete license text is reproduced below and is also available in the repository's [`LICENSE`](../LICENSE) file.
 
-## 🧪 Test Fixtures Included
-This repository includes two complete test fixtures for deterministic evaluation:
-
-SaaS Master Subscription Agreement.docx
-
-Data Processing Addendum.pdf
-
-## 📄 Generated Outputs Included
-This repository includes the actual generated reports produced by the agent:
-
-Magnetar_Final_Audit_SAAS.pdf
-
-Magnetar_Final_Audit_DPA.pdf
-
-These outputs demonstrate real execution — not mock data.
-
-## ⚠️ Limitations & Disclosure
-This system is an engineering demonstration of compliance automation. It is not a substitute for licensed legal counsel.
-
-Current limitations:
-
-Web evidence retrieval is based on Tavily snippets (not official consolidated legal databases).
-
-EU AI Act checks are high-level and depend on retrieved sources.
-
-Contracts longer than typical SaaS MSAs may hit token limits.
-
-Clause segmentation is currently implicit (not clause-number aware).
-
-## 🧩 Issues / Challenges Faced (and How We Fixed Them)
-❌ 1) PDF Export Crashing (latin-1 encoding error)
-Problem: FPDF fails when the report contains Unicode punctuation like “smart quotes”.
-
-Fix Implemented: A sanitizer was added to normalize Unicode into latin-1 safe characters before PDF write.
-
-❌ 2) Hallucination Risk in Legal Citations
-Problem: A single-pass LLM audit often produces vague or unverifiable legal claims.
-
-Fix Implemented: Reflexion pipeline added: reflection node critiques missing article numbers, researcher pulls evidence, senior partner rewrites final audit grounded in evidence.
-
-❌ 3) Tool Evidence Returning Blogs Instead of Official Sources
-Problem: Tavily sometimes returns high-ranking blogs (Ketch, Exabeam etc.) instead of official legal portals.
-
-Current Status: Acceptable for MVP. Planned fix moved to Roadmap.
-
-## ▶️ Usage
-1. Install dependencies
-Bash
-pip install -U langchain langchain-openai pydantic openai tavily-python langgraph gradio pdfplumber python-docx fpdf
-2. Set environment variables
-Bash
-export OPENAI_API_KEY="your_key"
-export TAVILY_API_KEY="your_key"
-3. Run the system
-Bash
-python legal_compliance_reflexion_agent.py
-##🔐 API Keys Required
-This project uses two APIs:
-
-OpenAI API (GPT-4.1-mini)
-
-Tavily Search API (free tier sufficient for MVP)
-
-## 🧭 Future Updates (Planned Roadmap)
-Integrate True Legal Databases (instead of general web search):
-
-GDPR official sources
-
-EUR-Lex
-
-EU AI Act consolidated text
-
-Normalize Citations to Official Legal Sources:
-
-Prefer gdpr-info.eu
-
-Prefer eur-lex.europa.eu
-
-Avoid blog sources unless no official source exists
-
-
-## 👨‍💻 Author
-
-Shubham Singh
-
-
-## 📜 License
-
+```text
 MIT License
+
+Copyright (c) 2026 Shubham Kumar Singh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
