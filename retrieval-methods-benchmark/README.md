@@ -1,234 +1,128 @@
-# 🧪 RETRIEVAL METHODS BENCHMARK  
-**A Deterministic, Comparative Evaluation of Retrieval Strategies in Agentic RAG Systems**
+# Retrieval Methods Benchmark
 
----
+**A side-by-side demonstration of vector similarity, query expansion, metadata self-query, and parent-document reconstruction over a food dataset.**
 
-## 📖 Overview
+[![Python](https://img.shields.io/badge/Python-blue.svg)](https://www.python.org/) [![Retrieval](https://img.shields.io/badge/Retrieval-4%20methods-2D7D9A.svg)](https://www.pinecone.io/) [![Embeddings](https://img.shields.io/badge/Embeddings-BGE%20Large-5B7FDC.svg)](https://www.sbert.net/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE)
 
-The **Retrieval Methods Benchmark** is a **research-grade, execution-backed evaluation system** designed to compare and stress-test multiple **retrieval strategies** used in modern Retrieval-Augmented Generation (RAG) pipelines.
+## Overview
 
-This project is **not** a chatbot, **not** a prompt experiment, and **not** a generic RAG demo.
+This Gradio application runs four retrieval approaches for the same question and displays an answer plus elapsed time for each: vector similarity, multi-query expansion, metadata self-query, and parent-document reconstruction. Context is assembled from records indexed from the food dataset, and the answer call is prompted to use the provided context.
 
-It exists to answer a precise engineering question:
+This is an interactive comparison prototype, not a comprehensive statistically controlled retrieval benchmark. It reports per-query latency and outputs, but does not compute corpus-wide precision, recall, MRR, nDCG, or correctness against a labelled test set.
 
-> *How do different retrieval strategies behave under strict grounding, deterministic constraints, and real-world edge cases?*
+## Compared methods
 
-All answers are generated **only** from a static JSON dataset and are evaluated under **identical conditions**, enabling direct comparison across methods.
+1. **Vector similarity:** query embedding and top-5 Pinecone matches.
+2. **Multi-query:** an LLM creates reformulations; each query retrieves top-2 records and the resulting contexts are combined.
+3. **Self-query:** an LLM extracts `cuisine_type` and `cooking_method` values, which are accepted only if they exactly match the vocabulary extracted from the dataset; top-5 filtered matches are then retrieved.
+4. **Parent document:** retrieves top-5 chunks, selects up to two parent IDs, and reconstructs parent text before answering.
 
----
+## Configuration verified in source
 
-## 🎯 What This Benchmark Evaluates
+| Setting | Value |
+|---|---|
+| LLM answer model | `gpt-4.1-mini`, temperature `0` |
+| Embedding model | `BAAI/bge-large-en-v1.5` |
+| Vector dimension | `1024` |
+| Index | `food-rag-strict` |
+| Metric | Cosine |
+| Chunk size / overlap | `700` / `100` characters |
+| Dataset filename | `FoodDataSet.json.1` |
+| UI | Gradio |
 
-This system compares **four distinct retrieval methodologies**, executed side-by-side for the same user query:
+### Important data and index warning
 
-1. **Vector Similarity Retrieval**
-2. **Multi-Query Expansion Retrieval**
-3. **Self-Query (Metadata-Constrained) Retrieval**
-4. **Parent Document Reconstruction Retrieval**
+The script loads `FoodDataSet.json.1`, then deletes the Pinecone index `food-rag-strict` if it already exists and creates it again before upserting the dataset. **Running the application can destroy and replace the existing index with that name.** Use a dedicated development index and verify the target before execution. The checked-in filename is `FoodDataSet.json.1`, not `FoodDataSet.json`.
 
-Each method is evaluated for:
-- correctness
-- grounding discipline
-- recall vs precision tradeoffs
-- latency
-- failure behavior under ambiguity
+The multi-query and filter-extraction calls do not explicitly set temperature, even though the final answering call uses temperature `0`; not all stages are deterministic.
 
----
+## Demonstration screenshots
 
-## 🧠 Design Philosophy
+### Basic retrieval / calories
 
-### ✅ Deterministic by Design
-- Single embedding model
-- Fixed vector dimension
-- No reranking layers
-- No probabilistic fallback answers
-- Temperature = 0
+![Test 1](output_test_1.png)
 
-### ✅ Grounding-First (Hallucination-Averse)
-- LLM answers **only** from retrieved context
-- Missing data results in **explicit refusal**
-- No inferred or estimated nutrition or health claims
+### Strict metadata filter
 
-### ✅ Method Isolation
-- Each retrieval strategy is executed independently
-- No cross-contamination of results
-- Latency measured per method
+![Test 2](output_test_2.png)
 
----
+### Nested feature extraction
 
-## 🔍 The Four Retrieval Methods
+![Test 3](output_test_3.png)
 
-### 1️⃣ Vector Similarity
-- Standard semantic similarity search
-- Top-k vector retrieval from Pinecone
-- Baseline retrieval strategy
+### Cooking-method wording variation
 
-### 2️⃣ Multi-Query Expansion
-- LLM generates multiple reformulations of the user query
-- Each query retrieves independently
-- Context is unioned before answering
+![Test 4](output_test_4.png)
 
-### 3️⃣ Self-Query (Strict Metadata Filtering)
-- LLM extracts structured filters from the query
-- Filters must match **exact database vocabulary**
-- Invalid filters are rejected
-- Enforces schema discipline
+### Null-filter fallback
 
-### 4️⃣ Parent Document Retrieval
-- Retrieves chunks first
-- Reconstructs full parent documents
-- Maximizes grounding, minimizes hallucination
-- Recall-limited by design
+![Test 5](output_test_5.png)
 
----
+## Run in Google Colab
 
-## 🧠 System Architecture
-```
-User Query
-↓
-SentenceTransformer Embedding
-↓
-Pinecone Vector Index
-↓
-┌──────────────────────────────────────────┐
-│ Vector | Multi | Self-Query | Parent Doc │
-└──────────────────────────────────────────┘
-↓
-Strict Context Assembly
-↓
-LLM (Context-Only Answering)
+The source includes notebook magic and uses Colab Secrets when available. Treat it as notebook-oriented until the installation and secrets cells are moved into normal Python setup.
 
-```
----
+1. Add `OPENAI_API_KEY` and `PINECONE_API_KEY` to Colab Secrets.
+2. Check that `FoodDataSet.json.1` is present and inspect the configured Pinecone index name before running.
+3. Install the dependencies used by the notebook:
 
-## 🧬 Embeddings & Vector Store
+   ```bash
+   pip install numpy==1.26.4 scikit-learn==1.3.2 sentence-transformers==2.7.0 langchain-core==0.2.43 langchain-text-splitters==0.2.4 langchain-openai pinecone openai tiktoken gradio nest_asyncio
+   ```
 
-- **Embedding Model:** BAAI/bge-large-en-v1.5  
-- **Embedding Dimension:** 1024 (LOCKED)  
-- **Normalization:** Enabled  
-- **Vector Database:** Pinecone (Serverless)  
-- **Similarity Metric:** Cosine  
+4. Run the notebook cells in order and submit one question to compare all four outputs.
 
-The embedding space is **global, stable, and deterministic**.
+## Interpretation and limitations
 
----
+- Per-query elapsed time includes model/API work; it varies with provider latency, network, prompt length, and generated response length.
+- No repeated-trial aggregation or statistical uncertainty is computed.
+- Multi-query expansion is LLM-generated and may vary across runs.
+- Self-query filters can miss relevant records if wording cannot be mapped to the dataset vocabulary.
+- The dataset concerns food information; the results are not medical nutrition advice.
+- External OpenAI/Pinecone service availability and API costs apply.
 
-## 🛠 Tech Stack
+## Repository files
 
-- **Language:** Python  
-- **UI:** Gradio  
-- **LLM:** GPT-4.1-mini  
-- **Embeddings:** SentenceTransformers  
-- **Vector DB:** Pinecone  
-- **Text Splitting:** RecursiveCharacterTextSplitter  
-- **Data Source:** Static JSON (`FoodDataSet.json`)  
-
----
-
-## 📂 Project Structure
-```
+```text
 retrieval-methods-benchmark/
-│── food_rag_methodologies.py
-│── FoodDataSet.json
-│── output_test_1.png
-│── output_test_2.png
-│── output_test_3.png
-│── output_test_4.png
-│── output_test_5.png
-│── README.md
+├── README.md
+├── food_rag_methodologies.py
+├── FoodDataSet.json.1
+├── output_test_1.png
+├── output_test_2.png
+├── output_test_3.png
+├── output_test_4.png
+└── output_test_5.png
 ```
 
----
+## Author
 
-## 🧪 Benchmark Execution & Results
+**Shubham Kumar Singh**
 
-All screenshots below are **real executions** of the system UI, captured without modification.
+## License
 
----
+This project is licensed under the **MIT License**. The complete license text is reproduced below and is also available in the repository's [`LICENSE`](../LICENSE) file.
 
-### 🟢 Test 1: Sanity Check (Calories Retrieval)
-
-**Query:**  
-> *What are the ingredients and calories of the American dessert Apple Pie?*
-
-**Purpose:**  
-Validate chunking, field preservation, and basic retrieval correctness.
-
-![Sanity Check](output_test_1.png)
-
----
-
-### 🟡 Test 2: Strict Metadata Filter Validation
-
-**Query:**  
-> *What are the health benefits of the Indian dish Lentil Dhal prepared by Simmering?*
-
-**Purpose:**  
-Validate exact vocabulary matching and strict filter enforcement.
-
-![Strict Filter Test](output_test_2.png)
-
----
-
-### 🔴 Test 3: Hidden JSON Feature Extraction
-
-**Query:**  
-> *Describe the taste and texture features of the Lentil Dhal.*
-
-**Purpose:**  
-Ensure nested JSON (`food_features`) survives chunking and parent reconstruction.
-
-![Hidden Feature Test](output_test_3.png)
-
----
-
-### ⚡ Test 4: Tense Normalization Trap
-
-**Query:**  
-> *What are the ingredients of the Indian curry that is simmered?*
-
-**Purpose:**  
-Verify tense normalization (`simmered → Simmering`) without schema violation.
-
-![Tense Trap Test](output_test_4.png)
-
----
-
-### 🧊 Test 5: Null Filter Fallback Behavior
-
-**Query:**  
-> *Which food is high in protein and good for muscle building?*
-
-**Purpose:**  
-Ensure system does **not** hallucinate filters and fails safely when structure is absent.
-
-![Null Filter Test](output_test_5.png)
-
----
-
-## ⚠️ Limitations & Disclosure
-
-- No probabilistic reasoning
-- No automatic ranking across methods
-- No numeric nutrition inference
-- Dataset-bound knowledge only
-- Ambiguous queries may correctly return “I don’t know”
-
-This benchmark is intentionally **conservative** and **audit-friendly**.
-
----
-
-## ▶️ Usage
-
-```bash
-pip install numpy sentence-transformers pinecone openai gradio
-python food_rag_methodologies.py
-```
-👨‍💻 Author
-
-Shubham Singh
-
-
-📜 License
-
+```text
 MIT License
+
+Copyright (c) 2026 Shubham Kumar Singh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
