@@ -1,100 +1,95 @@
 # X-Ray Agentic Radiologist
 
-**A LangGraph-orchestrated, evidence-grounded radiology report generation research prototype using vision analysis, Pinecone retrieval, web search, and a report-review agent.**
+**A LangGraph-orchestrated radiology-report research prototype combining vision-derived findings, Pinecone retrieval, Tavily search, and a model-based report review stage.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](#license) ![Workflow: LangGraph](https://img.shields.io/badge/Workflow-LangGraph-2E6D8E) ![Interface: Gradio](https://img.shields.io/badge/Interface-Gradio-orange)
+[![Python](https://img.shields.io/badge/Python-3.x-blue.svg)](https://www.python.org/) [![Workflow](https://img.shields.io/badge/Workflow-LangGraph-2E6D8E.svg)](https://www.langchain.com/langgraph) [![UI](https://img.shields.io/badge/UI-Gradio-orange.svg)](https://www.gradio.app/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE)
 
-> **Clinical safety notice:** This project is a research and portfolio prototype, not a medical device. Its output is not a diagnosis and must not be used to make clinical decisions. A qualified medical professional must independently interpret medical images and verify any generated content.
+> **Clinical safety:** This is a research/portfolio prototype, not a medical device. Its output is not a diagnosis and must not be used to make clinical decisions. A qualified clinician must independently interpret medical images and verify all generated content.
 
 ## Overview
 
-X-Ray Agentic Radiologist is a multi-stage workflow for producing a structured report from an uploaded X-ray image and optional clinical history. LangGraph coordinates the stages, and the Gradio interface exposes the execution log, intermediate artifacts, retrieved evidence, draft report, and reviewed report.
+The application accepts one image (`.png`, `.jpg`, or `.jpeg`) and optional clinical history. A LangGraph `StateGraph` coordinates six sequential nodes: vision analysis, retrieval-query construction, Pinecone search, Tavily search, report drafting, and report review. The Gradio UI displays the execution log and intermediate artifacts alongside the draft and reviewed report.
 
-Unlike a single-call vision demo, the workflow separates visual analysis, retrieval-query construction, evidence retrieval, report drafting, and report review into explicit graph nodes. The repository demonstrates this workflow on three frontal chest X-ray examples from the OpenI (NLM) Indiana University Chest X-rays collection.
+## Workflow
 
-## What It Does
-
-- Accepts a `.png`, `.jpg`, or `.jpeg` image and optional clinical history.
-- Produces structured vision findings as JSON, including image-quality descriptors, findings, post-surgical changes, spinal abnormalities, red flags, and a short summary.
-- Builds a retrieval query from the extracted findings.
-- Retrieves up to six matching chunks from a Pinecone index.
-- Queries Tavily for up to five external search results; the workflow continues with an empty result list when Tavily returns a non-200 response.
-- Drafts a report with fixed sections: clinical history, technique, findings, impression, ranked differential, recommendations, and limitations.
-- Sends the draft and evidence to a dedicated reviewer agent instructed to check support, remove hallucinations, and preserve the report structure.
-- Displays the agent log and intermediate outputs in the Gradio UI for review.
-
-## Design Principles
-
-### Explicit workflow, not a single prompt
-
-Each stage is a separate LangGraph node with identifiable input and output artifacts. This makes the workflow easier to inspect and debug; it does not guarantee that the generated findings are correct.
-
-### Evidence-assisted generation
-
-The report agent receives the vision JSON, retrieved Pinecone chunks, and Tavily results. The prompts instruct the agent to prioritize visual findings and use retrieved evidence as support. Retrieved material and web results may still be incomplete, irrelevant, or incorrect and must be checked.
-
-### Review stage included in the graph
-
-A Senior Radiologist Reviewer node reviews the draft against the available vision JSON and retrieved evidence. This is a model-based review step—not a validated clinical safeguard, independent medical review, or formal guarantee that hallucinations have been eliminated.
-
-### Visible intermediate artifacts
-
-The interface exposes agent logs, vision JSON, RAG hits, web evidence, the draft, and the final report. This supports inspection of individual workflow stages rather than hiding all intermediate processing.
-
-## Architecture
-
-```mermaid
-flowchart TD
-    A[Upload X-ray and optional clinical history]
-    B[Vision Analyst\nStructured JSON findings]
-    C[Query Builder\nFindings to retrieval query]
-    D[Pinecone Retriever\nEmbedding search, top_k = 6]
-    E[Tavily Search\nUp to 5 results]
-    F[Radiologist Agent\nDraft structured report]
-    G[Senior Radiologist Reviewer\nEvidence and format review]
-    H[Gradio UI\nLogs, evidence, draft, final report]
-
-    A --> B --> C --> D --> E --> F --> G --> H
+```text
+Image + optional clinical history
+  -> Vision Analyst (structured JSON)
+  -> Query Builder
+  -> Pinecone retrieval (top_k=6)
+  -> Tavily web search (up to 5 results)
+  -> Radiologist Agent (draft)
+  -> Senior Radiologist Reviewer (revised report)
+  -> Gradio: logs, evidence, draft, final text
 ```
 
-### Workflow components
+## Implementation details
 
-| Component | Responsibility | Implementation details |
-|---|---|---|
-| Vision Analyst | Extracts image findings and study descriptors | OpenAI vision-capable chat completion; JSON response format |
-| Query Builder | Converts vision findings into a retrieval query | Includes findings, post-surgical changes, spinal abnormalities, and summary fallback |
-| Pinecone Retriever | Retrieves internal knowledge chunks | Index `xray-rag-1024`; `top_k=6`; requests metadata |
-| Web Evidence | Retrieves external search results | Tavily Search API; maximum five results |
-| Radiologist Agent | Drafts the structured report | Receives clinical history, vision JSON, RAG hits, and web results |
-| Senior Radiologist Reviewer | Reviews and revises the draft | Receives the same evidence and the draft report |
-| Gradio UI | Presents trace and outputs | Image upload, optional history, agent log, accordions for artifacts, final report field |
-
-## Embeddings and Retrieval Configuration
-
-| Setting | Configured value |
+| Area | Checked-in configuration |
 |---|---|
-| Vector database | Pinecone |
-| Index name | `xray-rag-1024` |
+| Orchestration | LangGraph `StateGraph` with sequential edges |
+| Vision and report model | `gpt-4.1-mini` for both configured model variables |
+| Vector index | Pinecone `xray-rag-1024` |
 | Embedding model | `BAAI/bge-large-en-v1.5` |
-| Embedding dimension | `1024` |
-| Embedding normalization | Enabled (`normalize_embeddings=True`) |
-| Retrieval depth | `top_k=6` |
-| Retrieved metadata | `chunk_id`, `text`, and match score |
+| Embedding dimension | `1024`, checked at startup |
+| Vector normalization | Enabled |
+| Retrieval | `top_k=6`, metadata included |
+| External search | Tavily Search API, up to five results |
+| UI | Gradio |
 
-The code checks that the embedding model returns 1,024 dimensions at startup. The project directory does not include a Pinecone index-provisioning or document-ingestion pipeline; a compatible index and populated records must already be available.
+The code uses the vision JSON, retrieved records, and web results as inputs to report drafting and review. The reviewer is another LLM call instructed to remove unsupported statements; it is not a validated clinical safeguard and cannot guarantee that hallucinations are removed.
 
-## Technology Stack
+## Demonstration assets
 
-- **Language:** Python
-- **UI:** Gradio
-- **Workflow orchestration:** LangGraph
-- **LLM API:** OpenAI
-- **Vector database:** Pinecone
-- **Embedding model:** SentenceTransformers with `BAAI/bge-large-en-v1.5`
-- **External search:** Tavily Search API
-- **Structured state:** Python `TypedDict` and JSON
+### Interface
 
-## Repository Contents
+![Gradio interface](interface.png)
+
+### Example images and saved reports
+
+| Example | Image | Saved report |
+|---|---|---|
+| 1 | ![Test 1](test_1.png) | [output_1.docx](output_1.docx) |
+| 2 | ![Test 2](test_2.png) | [output_2.docx](output_2.docx) |
+| 3 | ![Test 3](test_3.png) | [output_3.docx](output_3.docx) |
+
+The existing project description identifies the three images as examples from the OpenI/NLM Indiana University Chest X-rays collection. Reference reports may describe multi-view studies while the application accepts one uploaded image; therefore the reference is contextual, not a guaranteed one-to-one gold standard.
+
+- [OpenI example 1](https://openi.nlm.nih.gov/detailedresult?img=CXR452_IM-2083-1001&query=Indiana%20U.%20Chest%20X-rays,%20Pneumonia&it=xg&uniq=1&req=4&npos=1)
+- [OpenI example 2](https://openi.nlm.nih.gov/detailedresult?img=CXR125_IM-0169-1001&query=Indiana%20U.%20Chest%20X-rays,%20Effusion&it=xg&uniq=1&req=4&npos=2)
+- [OpenI example 3](https://openi.nlm.nih.gov/detailedresult?img=CXR484_IM-2108-1001&query=Indiana%20U.%20Chest%20X-rays&it=xg&coll=cxr&uniq=1&req=4&npos=7)
+
+## Run in Google Colab
+
+The checked-in script is exported from Colab and includes notebook magic (`!pip`) plus `google.colab.userdata`; it is not directly executable with ordinary `python` unchanged.
+
+1. Add `OPENAI_API_KEY`, `PINECONE_API_KEY`, and `TAVILY_API_KEY` in Colab Secrets.
+2. Confirm Pinecone index `xray-rag-1024` exists, is 1,024-dimensional, and contains the expected `chunk_id` and `text` metadata.
+3. Install the source dependencies in a notebook cell:
+
+   ```bash
+   pip install -U gradio openai pinecone sentence-transformers requests langgraph langchain langchain-openai pydantic
+   ```
+
+4. Run the source cell and upload a single image in Gradio.
+
+The repository does not include a Pinecone provisioning or ingestion pipeline. The saved `.docx` reports are example artifacts already present in the repository; the current UI code does not expose a dedicated report-download control.
+
+## Model comparison and interpretation
+
+The original project notes describe qualitative comparisons between `gpt-4.1-mini` and `gpt-5-mini` on three examples. The currently checked-in code sets both `MODEL_VISION` and `MODEL_AGENTS` to `gpt-4.1-mini`; it does not automatically execute a two-model evaluation or calculate clinical metrics. The examples are not a controlled clinical study and do not establish clinical safety.
+
+## Limitations and privacy
+
+- The code analyses a single uploaded view, not a full multi-view study.
+- The retrieved knowledge index and its provenance must be validated separately.
+- Tavily results are generic web-search evidence, not a curated clinical evidence database.
+- A Tavily non-200 response is handled with empty search results; other exceptions may interrupt execution.
+- No automated test suite reports sensitivity, specificity, calibration, hallucination rate, or clinician agreement.
+- Images and related prompts are sent to OpenAI; search queries are sent to Tavily; retrieval queries go to Pinecone. Do not submit identifiable patient data without appropriate authorization and safeguards.
+- Do not expose the development Gradio instance publicly.
+
+## Project files
 
 ```text
 agentic-radiologist/
@@ -110,121 +105,16 @@ agentic-radiologist/
 └── test_3.png
 ```
 
-`data.docx` is included in the repository, but the checked-in application script does not read it at runtime. The current folder also does not include an automated ingestion script for preparing the Pinecone index.
-
-## Interface
-
-The following screenshot is included with the repository.
-
-![X-Ray Agentic Radiologist Gradio interface](./interface.png)
-
-## Demonstration Dataset
-
-The three example images are identified in the project as coming from the **OpenI (NLM) Indiana University Chest X-rays Collection**. The reference reports below are the study-level context recorded in the project's original README; they should not be treated as a guaranteed one-to-one gold standard for a system that receives only a single image.
-
-> **View limitation:** The original OpenI report may be associated with a multi-view study, while this workflow is demonstrated with one uploaded image. Differences between the generated report and a reference report therefore need careful interpretation.
-
-### Test 1
-
-![Test 1 chest X-ray](./test_1.png)
-
-**Reference-report summary recorded by the project:** clear lungs, normal heart, and suture material at the left apex suggesting prior lung surgery.
-
-[View the OpenI record](https://openi.nlm.nih.gov/detailedresult?img=CXR452_IM-2083-1001&query=Indiana%20U.%20Chest%20X-rays,%20Pneumonia&it=xg&uniq=1&req=4&npos=1)
-
-### Test 2
-
-![Test 2 chest X-ray](./test_2.png)
-
-**Reference-report summary recorded by the project:** sternotomy changes, no focal infiltrates, no pleural effusion, and an impression of no acute disease.
-
-[View the OpenI record](https://openi.nlm.nih.gov/detailedresult?img=CXR125_IM-0169-1001&query=Indiana%20U.%20Chest%20X-rays,%20Effusion&it=xg&uniq=1&req=4&npos=2)
-
-### Test 3
-
-![Test 3 chest X-ray](./test_3.png)
-
-**Reference-report summary recorded by the project:** thoracolumbar rotatory scoliosis, atherosclerotic aorta, hypoinflated but clear lungs, and an impression of hypoinflation without acute disease.
-
-[View the OpenI record](https://openi.nlm.nih.gov/detailedresult?img=CXR484_IM-2108-1001&query=Indiana%20U.%20Chest%20X-rays&it=xg&coll=cxr&uniq=1&req=4&npos=7)
-
-## Example Report Artifacts
-
-The repository includes three `.docx` files as example report artifacts:
-
-- [Output 1](./output_1.docx)
-- [Output 2](./output_2.docx)
-- [Output 3](./output_3.docx)
-
-These files are examples, not a substitute for expert evaluation or a repeatable clinical benchmark.
-
-## Model-Comparison Notes and Interpretation
-
-The original project description records qualitative comparisons across three sample images involving `gpt-4.1-mini` and `gpt-5-mini`. It describes examples in which an earlier `gpt-4.1-mini` run reported unsupported lines/tubes in Test 2 and overconfident cardiomegaly in Test 1, while recorded `gpt-5-mini` outputs were described as more cautious.
-
-**Important configuration detail:** the checked-in script currently sets both `MODEL_VISION` and `MODEL_AGENTS` to `gpt-4.1-mini`. It does not automatically run a two-model comparison or calculate clinical accuracy metrics. The observations above are qualitative reports from a small set of examples, not a controlled clinical evaluation and not evidence that either model is clinically safe.
-
-## Setup and Usage
-
-### Execution environment
-
-The checked-in `agentic_radiologist.py` is exported from Google Colab. It contains notebook-specific syntax (`!pip`) and imports `google.colab.userdata` to read secrets. **It is not directly executable as a normal local Python script without adaptation.**
-
-### Run in Google Colab
-
-1. Create a Google Colab notebook.
-2. Add the following secrets in Colab's **Secrets** panel and grant the notebook access to them:
-   - `OPENAI_API_KEY`
-   - `PINECONE_API_KEY`
-   - `TAVILY_API_KEY`
-3. Copy the code into a notebook cell, preserving the initial `!pip` installation command, or convert the installation command into a separate notebook cell.
-4. Confirm that the Pinecone index `xray-rag-1024` exists, has 1,024-dimensional vectors, and contains records with the `chunk_id` and `text` metadata expected by the script.
-5. Run the cell. After model, Pinecone, and embedding initialization completes, use the Gradio interface to upload an image and optionally enter clinical history.
-
-The source installs these dependencies in its notebook setup cell:
-
-```bash
-!pip -q install -U gradio openai pinecone sentence-transformers requests langgraph langchain langchain-openai pydantic
-```
-
-### Local execution
-
-To run outside Colab, first move dependency installation out of the Python source and replace `google.colab.userdata.get(...)` with environment-variable loading (for example, `os.environ.get(...)`). Set the three API keys in your local environment before launching the app. These local-runtime changes are not included in the checked-in script.
-
-### Runtime behavior
-
-The Gradio app provides an image upload field, optional clinical history, a **Generate Report** button, an agent-log panel, expandable intermediate outputs, and a final-report field. The current script calls `demo.launch(debug=True)` and does not implement a dedicated report-download control in the interface; the `.docx` artifacts listed above are files already included in the repository.
-
-## Operational Requirements and Limitations
-
-- Valid OpenAI, Pinecone, and Tavily API credentials are required.
-- Pinecone access and a populated index named `xray-rag-1024` are required before inference can complete.
-- The script validates embedding dimension, but does not provision the index or validate the clinical quality of its contents.
-- Tavily non-200 responses are handled by continuing without web results; other network or API exceptions may still interrupt execution.
-- The reviewer is another LLM call and can miss errors or introduce new ones.
-- There is no automated evaluation suite in this project folder that reports sensitivity, specificity, calibration, hallucination rate, or clinician agreement.
-- The included three-image demonstration is too small to establish generalization or clinical performance.
-- Treat all generated findings, recommendations, confidence values, and differentials as unverified model output.
-- Avoid uploading identifiable patient information to third-party APIs unless you have the required legal basis, consent, and organizational controls.
-- Do not expose a development Gradio instance or API credentials publicly.
-
-## References
-
-- [OpenI — Indiana University Chest X-rays Collection](https://openi.nlm.nih.gov/)
-- [LangGraph documentation](https://langchain-ai.github.io/langgraph/)
-- [Gradio documentation](https://www.gradio.app/docs)
-- [Pinecone documentation](https://docs.pinecone.io/)
-- [SentenceTransformers documentation](https://www.sbert.net/)
-- [Tavily Search API documentation](https://docs.tavily.com/)
-- [OpenAI API documentation](https://platform.openai.com/docs/)
-
 ## Author
 
 **Shubham Kumar Singh**
 
 ## License
 
-This project is licensed under the **MIT License**.
+This project is licensed under the **MIT License**. The complete license text is reproduced below and is also available in the repository's [`LICENSE`](../LICENSE) file.
+
+```text
+MIT License
 
 Copyright (c) 2026 Shubham Kumar Singh
 
@@ -245,3 +135,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
